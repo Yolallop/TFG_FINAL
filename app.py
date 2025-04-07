@@ -4,21 +4,18 @@ import bcrypt
 from urllib.parse import quote
 from modelo import db, Usuario, UsuarioRespuestas, Video
 
-# ───── Configuración App ───── #
 app = Flask(__name__)
 app.secret_key = 'clave_super_secreta'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5432/tfg_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# ───── Rutas ───── #
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
 
-# ───── Registro ───── #
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -44,7 +41,6 @@ def register():
     return render_template('register.html')
 
 
-# ───── Login ───── #
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -62,7 +58,6 @@ def login():
     return render_template('login.html')
 
 
-# ───── Preguntas ───── #
 @app.route('/preguntas', methods=['GET', 'POST'])
 def preguntas():
     if 'user_id' not in session:
@@ -88,7 +83,6 @@ def preguntas():
     return render_template('preguntas.html')
 
 
-# ───── Dashboard ───── #
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
@@ -103,7 +97,6 @@ def dashboard():
 
     return render_template('dashboard.html', usuario=usuario, respuestas=respuestas, videos=videos)
 
-# ───── Generar Script desde respuestas ───── #
 def generar_script_curso(respuestas):
     if 'Programación' in respuestas.intereses:
         return "Curso básico de Python para principiantes."
@@ -117,7 +110,6 @@ def generar_script_curso(respuestas):
         return "Curso general para descubrir tus habilidades."
 
 
-# ───── Generar Curso (redirige al video) ───── #
 @app.route('/generar_curso')
 def generar_curso():
     if 'user_id' not in session:
@@ -160,20 +152,6 @@ def crear_video_con_pictory():
     return redirect(url_for('dashboard'))
 
 
-
-def generar_video_con_pictory_gpt(script_texto):
-    try:
-        result = startTextToVideoJob({
-            "text": script_texto,
-            "speakerVoice": "Sofia",  # Puedes cambiar por "Adam" si quieres voz masculina
-            "aspectRatio": "horizontal"
-        })
-        return result.get("jobId", None)
-    except Exception as e:
-        print("❌ Error generando video con Pictory:", e)
-        return None
-
-# ───── Logout ───── #
 @app.route('/logout')
 def logout():
     session.clear()
@@ -181,11 +159,9 @@ def logout():
     return redirect(url_for('home'))
 
 
-# ───── Ejecutar App ───── #
 if __name__ == '__main__':
     with app.app_context():
-        from modelo import Video  # asegúrate de importar aquí también si no lo has hecho arriba
-        db.create_all()
+        from modelo import Video 
         print("🧱 Creando tablas en la base de datos...")
 
     app.run(debug=True)
