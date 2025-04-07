@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuéntanos sobre ti | TFG</title>
+    
+    <!-- Bootstrap & Estilos -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+
+        
+        <div class="quiz-container">
+            <h2>¡Cuéntanos sobre ti!</h2>
+            <p>Responde para encontrar el mejor curso para ti.</p>
+
+            <!-- Progreso -->
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+
+            <form action="/preguntas" method="POST" id="quiz-form">
+                
+                <!-- Pregunta 1 -->
+                <div class="quiz-step active">
+                    <label class="form-label"> ¿Qué temas te interesan?</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="intereses" value="Programación">
+                        <label class="form-check-label"> Programación</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="intereses" value="Diseño">
+                        <label class="form-check-label"> Diseño</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="intereses" value="Marketing">
+                        <label class="form-check-label"> Marketing</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="intereses" value="Negocios">
+                        <label class="form-check-label"> Negocios</label>
+                    </div>
+                    <button type="button" class="btn-custom next-btn">Siguiente</button>
+                </div>
+
+                <!-- Pregunta 2 -->
+                <div class="quiz-step">
+                    <label class="form-label"> ¿Cuáles son tus objetivos de aprendizaje?</label>
+                    <textarea class="form-control" name="objetivos" rows="3" placeholder="Escribe aquí tus objetivos..."></textarea>
+                    <button type="button" class="btn-custom prev-btn">Atrás</button>
+                    <button type="button" class="btn-custom next-btn">Siguiente</button>
+                </div>
+
+                <!-- Pregunta 3 -->
+                <div class="quiz-step">
+                    <label class="form-label"> ¿Tienes experiencia previa en estos temas?</label>
+                    <select class="form-select" name="experiencia">
+                        <option value="Principiante">Principiante 🟢</option>
+                        <option value="Intermedio">Intermedio 🟡</option>
+                        <option value="Avanzado">Avanzado 🔴</option>
+                    </select>
+                    <button type="button" class="btn-custom prev-btn">Atrás</button>
+                    <button type="submit" class="btn-custom"> Guardar</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const steps = document.querySelectorAll('.quiz-step');
+        const nextBtns = document.querySelectorAll('.next-btn');
+        const prevBtns = document.querySelectorAll('.prev-btn');
+        const progressBar = document.getElementById('progress-bar');
+        let currentStep = 0;
+
+        function updateSteps() {
+            steps.forEach((step, index) => {
+                step.classList.toggle('active', index === currentStep);
+            });
+            progressBar.style.width = `${(currentStep + 1) / steps.length * 100}%`;
+        }
+
+        nextBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    updateSteps();
+                }
+            });
+        });
+
+        prevBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateSteps();
+                }
+            });
+        });
+
+        updateSteps();
+    </script>
+
+</body>
+</html>
