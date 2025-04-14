@@ -2,72 +2,113 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Tu Dashboard</title>
+    <title>Dashboard - Cursos Inteligentes</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f0f2f5;
+            background-color: #f5f7fa;
         }
-        .card {
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            background-color: #343a40;
+            padding-top: 30px;
+            color: white;
+        }
+        .sidebar a {
+            display: block;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+        }
+        .sidebar a:hover {
+            background-color: #495057;
+        }
+        .content {
+            margin-left: 260px;
+            padding: 40px;
+        }
+        .card-video {
             border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
-        .logout-btn {
-            position: absolute;
-            top: 20px;
-            right: 30px;
+        iframe {
+            width: 100%;
+            height: 315px;
         }
     </style>
 </head>
 <body>
 
-<div class="container py-5 position-relative">
-    <a href="{{ url_for('logout') }}" class="btn btn-danger logout-btn">Cerrar sesión</a>
+<!-- Menú lateral -->
+<div class="sidebar">
+    <h4 class="text-center">👩‍💻 {{ usuario }}</h4>
+    <hr>
+    <a href="#">🏠 Inicio</a>
+    <a href="#">📅 Calendario</a>
+    <a href="#cursos">🎓 Cursos</a>
+    <a href="#nuevos">✨ Nuevos Cursos</a>
+    <a href="{{ url_for('logout') }}">🔓 Cerrar sesión</a>
+</div>
 
-    <h2 class="mb-4">Bienvenido, {{ usuario }} 👋</h2>
+<!-- Contenido principal -->
+<div class="content">
+    <h2>Bienvenida, {{ usuario }} 👋</h2>
 
     {% if respuestas %}
-        <div class="row g-4 mb-5">
-            <div class="col-md-6">
-                <div class="card p-4">
-                    <h4>Tus respuestas</h4>
-                    <p><strong>Intereses:</strong> {{ respuestas.intereses }}</p>
-                    <p><strong>Objetivos:</strong> {{ respuestas.objetivos }}</p>
-                    <p><strong>Experiencia:</strong> {{ respuestas.experiencia }}</p>
-                </div>
-            </div>
+        <div class="alert alert-info">
+            <strong>Intereses:</strong> {{ respuestas.intereses }}<br>
+            <strong>Objetivos:</strong> {{ respuestas.objetivos }}<br>
+            <strong>Experiencia:</strong> {{ respuestas.experiencia }}
+        </div>
 
-            <div class="col-md-6">
-                <div class="card p-4 bg-primary text-white">
-                    <h4>🎓 Curso Sugerido</h4>
-                    <p>Basado en tus intereses, podemos generar un curso personalizado.</p>
-                    <a href="{{ url_for('generar_curso') }}" class="btn btn-light text-dark fw-bold">🎥 Generar Curso en Video</a>
-
-                </div>
-            </div>
+        <div class="card p-4 mb-5 bg-light">
+            <h4>🎥 ¿Lista para aprender?</h4>
+            <p>Pulsa el botón para generar tu curso personalizado en video.</p>
+            <a href="{{ url_for('generar_curso') }}" class="btn btn-success">🚀 Generar Curso Inteligente</a>
         </div>
     {% else %}
         <div class="alert alert-warning">
-            Aún no has respondido las preguntas. <a href="{{ url_for('preguntas') }}">Responde aquí</a>.
+            Aún no has respondido el formulario de preferencias. <a href="{{ url_for('preguntas') }}">Completar ahora</a>.
         </div>
     {% endif %}
 
-    <!-- 🔹 CURSOS GENERADOS -->
-    <div class="card p-4">
-        <h4 class="mb-3">🎥 Tus Cursos Generados</h4>
-        {% if videos %}
-            <ul class="list-group">
-                {% for video in videos %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ video.titulo }}
-                        <a href="{{ video.url }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver Video</a>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-muted">Aún no has generado ningún curso.</p>
-        {% endif %}
-    </div>
+    <!-- Lista de cursos generados -->
+    <h3 class="mb-4" id="cursos">🎓 Tus Cursos Generados</h3>
+    {% if videos %}
+        <div class="row g-4">
+            {% for video in videos %}
+                <div class="col-md-6">
+                    <div class="card card-video p-3">
+                        <h5>{{ video.titulo }}</h5>
+
+                        {% if video.video_path.startswith("https://") %}
+                            <iframe src="{{ video.video_path }}" frameborder="0" allowfullscreen></iframe>
+                        {% else %}
+                            <video width="100%" controls>
+                                <source src="{{ url_for('static', filename=video.video_path) }}" type="video/mp4">
+                                Tu navegador no soporta el video.
+                            </video>
+                        {% endif %}
+
+                        <p class="mt-2">{{ video.descripcion }}</p>
+                        <details class="mt-2">
+                            <summary><strong>📜 Ver guion del video</strong></summary>
+                            <p style="white-space: pre-wrap;">{{ video.script }}</p>
+                        </details>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">Aún no has generado ningún curso. Comienza arriba con tu curso personalizado 🎥</p>
+    {% endif %}
+
+    <!-- Evaluación -->
+    <h3 class="mt-5 mb-4">📝 Evaluación de Comprensión</h3>
+    <p>¿Está  para poner a prueba lo que has aprendido? Realiza la prueba de comprensión para verificar tu conocimiento.</p>
+    <a href="{{ url_for('evaluacion') }}" class="btn btn-primary">Realizar prueba de comprensión</a>
 </div>
 
 </body>

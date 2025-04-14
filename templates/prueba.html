@@ -1,0 +1,12 @@
+<div>
+    <h2>Prueba de Comprensión</h2>
+    <form method="POST" action="{{ url_for('guardar_respuestas', curso_id=curso_id) }}">
+        {% for pregunta in preguntas %}
+        <div>
+            <label>{{ pregunta }}</label>
+            <input type="text" name="respuestas" required>
+        </div>
+        {% endfor %}
+        <button type="submit">Enviar Respuestas</button>
+    </form>
+</div>
