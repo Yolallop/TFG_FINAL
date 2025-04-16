@@ -33,7 +33,7 @@
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
-        iframe {
+        iframe, video {
             width: 100%;
             height: 315px;
         }
@@ -87,7 +87,8 @@
                             <iframe src="{{ video.video_path }}" frameborder="0" allowfullscreen></iframe>
                         {% else %}
                             <video width="100%" controls>
-                                <source src="{{ url_for('static', filename=video.video_path) }}" type="video/mp4">
+                                <source src="{{ url_for('static', filename=video.video_path.split('static/')[-1]) }}" type="video/mp4">
+
                                 Tu navegador no soporta el video.
                             </video>
                         {% endif %}
@@ -107,7 +108,7 @@
 
     <!-- Evaluación -->
     <h3 class="mt-5 mb-4">📝 Evaluación de Comprensión</h3>
-    <p>¿Está  para poner a prueba lo que has aprendido? Realiza la prueba de comprensión para verificar tu conocimiento.</p>
+    <p>¿Está lista para poner a prueba lo que has aprendido? Realiza la prueba de comprensión para verificar tu conocimiento.</p>
     <a href="{{ url_for('evaluacion') }}" class="btn btn-primary">Realizar prueba de comprensión</a>
 </div>
 
