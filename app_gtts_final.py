@@ -19,7 +19,7 @@ def dividir_guion_en_secciones(guion, palabras_por_seccion=350):
 # === 2. Generar imagen con OpenAI por cada sección (imagen única por contenido) ===
 def generar_imagen_por_seccion(texto, indice):
     prompt = f"Genera una imagen educativa y realista para el siguiente contenido: {texto[:300]}"
-    prompt_hash = hashlib.md5(prompt.encode()).hexdigest()[:8]  # nombre único por contenido
+    prompt_hash = hashlib.md5(prompt.encode()).hexdigest()[:8]  
     ruta_origen = f"static/imagenes/imagen_{indice}_{prompt_hash}_original.png"
     ruta_final = f"static/imagenes/imagen_{indice}_{prompt_hash}.png"
 
@@ -35,6 +35,7 @@ def generar_imagen_por_seccion(texto, indice):
         imagen_bytes = base64.b64decode(imagen_b64)
         with open(ruta_origen, 'wb') as f:
             f.write(imagen_bytes)
+            
 
         # Adaptar al tamaño 1280x720 con fondo blanco
         with Image.open(ruta_origen) as img:
