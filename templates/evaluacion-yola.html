@@ -1,0 +1,12 @@
+<div>
+    <h2>Evaluación</h2>
+    <p>Selecciona un curso para realizar la prueba de comprensión.</p>
+    
+    <ul>
+        {% for video in videos %}
+        <li>
+            <a href="{{ url_for('generar_preguntas', curso_id=video.id) }}">Realizar prueba para: {{ video.titulo }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>

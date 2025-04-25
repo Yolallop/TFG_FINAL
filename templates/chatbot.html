@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Bienvenido, {{ user_profile['name'] }} 👋</h2>
+
+    <div class="card p-4 mb-5 bg-light">
+        <h4>🎥 ¿Listo para aprender?</h4>
+        <p>Pulsa el botón para generar tu curso personalizado en video.</p>
+        <form action="{{ url_for('generar_curso') }}" method="POST">
+            <button type="submit" class="btn btn-success">🚀 Generar Curso Inteligente</button>
+        </form>
+    </div>
+
+    <!-- Chatbot -->
+    <div class="card mt-5">
+        <div class="card-header">
+            <h4>Chatbot de Ayuda</h4>
+        </div>
+        <div class="card-body">
+            <div id="chatbot-container" style="max-height: 400px; overflow-y: scroll; margin-bottom: 10px;">
+                <!-- Aquí se mostrarán los mensajes -->
+                {% if bot_response %}
+                <div class="d-flex justify-content-start mb-4">
+                    <div class="img_cont_msg">
+                        <img src="../static/images/logoUniConnect.png" class="rounded-circle user_img_msg">
+                    </div>
+                    <div class="msg_cotainer">
+                        {{ bot_response }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="input-group">
+                <form method="POST" action="/chatbot">
+                    <input type="text" name="msg" id="chat-input" class="form-control" placeholder="Escribe tu mensaje..." required />
+                    <button class="btn btn-primary" type="submit" id="send-chat">Enviar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

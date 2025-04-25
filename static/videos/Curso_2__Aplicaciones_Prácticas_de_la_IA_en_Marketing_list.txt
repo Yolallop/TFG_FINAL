@@ -1,0 +1,6 @@
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Aplicaciones_Prácticas_de_la_IA_en_Marketing_1.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Aplicaciones_Prácticas_de_la_IA_en_Marketing_2.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Aplicaciones_Prácticas_de_la_IA_en_Marketing_3.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Aplicaciones_Prácticas_de_la_IA_en_Marketing_4.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Aplicaciones_Prácticas_de_la_IA_en_Marketing_5.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Aplicaciones_Prácticas_de_la_IA_en_Marketing_6.mp4'

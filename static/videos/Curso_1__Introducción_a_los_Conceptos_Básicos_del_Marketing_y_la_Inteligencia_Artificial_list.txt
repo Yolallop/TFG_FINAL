@@ -1,0 +1,7 @@
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Introducción_a_los_Conceptos_Básicos_del_Marketing_y_la_Inteligencia_Artificial_1.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Introducción_a_los_Conceptos_Básicos_del_Marketing_y_la_Inteligencia_Artificial_2.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Introducción_a_los_Conceptos_Básicos_del_Marketing_y_la_Inteligencia_Artificial_3.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Introducción_a_los_Conceptos_Básicos_del_Marketing_y_la_Inteligencia_Artificial_4.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Introducción_a_los_Conceptos_Básicos_del_Marketing_y_la_Inteligencia_Artificial_5.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Introducción_a_los_Conceptos_Básicos_del_Marketing_y_la_Inteligencia_Artificial_6.mp4'
+file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Introducción_a_los_Conceptos_Básicos_del_Marketing_y_la_Inteligencia_Artificial_7.mp4'

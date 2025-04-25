@@ -1,27 +1,19 @@
-from flask_sqlalchemy import SQLAlchemy
+# modelo.py
 
-db = SQLAlchemy()
+from pymongo import MongoClient
+from datetime import datetime
+from config import MONGO_URI
 
-class Usuario(db.Model):
-    __tablename__ = 'usuarios'
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
+client          = MongoClient(MONGO_URI)
+db              = client["tfg_db"]
 
-class UsuarioRespuestas(db.Model):
-    __tablename__ = 'respuestas'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
-    intereses = db.Column(db.String(200))
-    objetivos = db.Column(db.Text)
-    experiencia = db.Column(db.String(50))
+usuarios_col    = db["usuarios"]
+respuestas_col  = db["respuestas"]
+cursos_col      = db["cursos"]    # nueva colección
+videos_col      = db["videos"]    # colección para cada sección/vídeo
 
-class Video(db.Model):
-    __tablename__ = 'videos'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
-    titulo = db.Column(db.String(200))
-    descripcion = db.Column(db.Text)
-    script = db.Column(db.Text)
-    video_path = db.Column(db.String(300))
+# Índices
+usuarios_col.create_index("email", unique=True)
+respuestas_col.create_index("user_id")
+cursos_col.create_index("user_id")
+videos_col.create_index("curso_id")
