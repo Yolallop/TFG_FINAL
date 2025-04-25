@@ -1,264 +1,171 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-from pymongo import MongoClient
-from config import OPENAI_API_KEY, ELEVEN_API_KEY
-import logging
+# curso.py
 import os
-import openai
+import re
 import subprocess
-from gtts import gTTS
-from PIL import Image
+import logging
 import base64
 
-from elevenlabs import generate, save, set_api_key
+import openai
+from gtts import gTTS
+from PIL import Image
 
-set_api_key(ELEVEN_API_KEY)
+from config import OPENAI_API_KEY
 
-
-
-# Configuración de OpenAI
-openai.api_key = OPENAI_API_KEY
-
-# Configuración de logging
+# ——— Configuración de logging —————————————————————————
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-# Configuración de Flask y MongoDB
-app = Flask(__name__, template_folder='templates', static_folder='static')
-app.config['TEMPLATES_AUTO_RELOAD'] = True
-app.jinja_env.auto_reload = True
-app.debug = True
-app.secret_key = 'clave_super_secreta'  # Cambia esto por algo más seguro
+# ——— Cliente OpenAI —————————————————————————————————————
+openai.api_key = OPENAI_API_KEY
 
-# Asegúrate de definir la variable 'text' antes de usarla
-text = "Este es el texto que quiero convertir a voz."  # Asegúrate de definirlo
-
-# Usamos el método correcto para generar el audio
-audio = eleven.text_to_speech(text)  # Usando el método correcto para generar el audio
-
-# Guardamos el archivo de audio generado
-audio_path = 'static/audios/curso_audio.mp3'
-with open(audio_path, 'wb') as f:
-    f.write(audio)
-
-# Asegúrate de que MongoDB está configurado correctamente
-mongo = MongoClient("mongodb://localhost:27017")
-db = mongo.tfg_db
-users = db.usuarios
-prefs = db.respuestas
-vids = db.videos
-
-# Directorios para guardar archivos generados
-aud_dir = os.path.join("static", "audios")
-img_dir = os.path.join("static", "imagenes")
-vid_dir = os.path.join("static", "videos")
-os.makedirs(aud_dir, exist_ok=True)
-os.makedirs(img_dir, exist_ok=True)
-os.makedirs(vid_dir, exist_ok=True)
-
-
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        nombre = request.form['nombre'].strip()
-        email = request.form['email'].lower().strip()
-        password = request.form['password'].encode('utf-8')
-
-        if users.find_one({"email": email}):
-            flash('El correo ya está registrado.', 'danger')
-            return redirect(url_for('register'))
-
-        hashed = bcrypt.hashpw(password, bcrypt.gensalt())
-        users.insert_one({"nombre": nombre, "email": email, "password": hashed})
-        u = users.find_one({"email": email})
-        session['user_id'] = str(u['_id'])
-        session['usuario'] = nombre
-
-        return redirect(url_for('preguntas'))
-    return render_template('register.html')
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form['email'].lower().strip()
-        password = request.form['password'].encode('utf-8')
-        u = users.find_one({"email": email})
-
-        if u and bcrypt.checkpw(password, u['password']):
-            session['user_id'] = str(u['_id'])
-            session['usuario'] = u['nombre']
-            return redirect(url_for('dashboard'))
-
-        flash('Credenciales incorrectas', 'danger')
-
-    return render_template('login.html')
-
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash("Sesión cerrada", "info")
-    return redirect(url_for('home'))
-
-
-@app.route('/preguntas', methods=['GET', 'POST'])
-def preguntas():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        intereses = ",".join(request.form.getlist('intereses'))
-        objetivos = request.form['objetivos']
-        experiencia = request.form['experiencia']
-
-        nueva_respuesta = {
-            "user_id": session['user_id'],
-            "intereses": intereses,
-            "objetivos": objetivos,
-            "experiencia": experiencia
-        }
-
-        prefs.replace_one(
-            {"user_id": session['user_id']},
-            nueva_respuesta,
-            upsert=True
-        )
-
-        return redirect(url_for('dashboard'))
-
-    return render_template('preguntas.html')
-
-
-@app.route('/dashboard')
-def dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    usuario = session['usuario']
-    respuestas = prefs.find_one({"user_id": session['user_id']})
-    videos = vids.find({"user_id": session['user_id']})
-
-    return render_template('dashboard.html', usuario=usuario, respuestas=respuestas, videos=videos)
-
-
-@app.route('/generar_curso', methods=['POST'])
-def generar_curso():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    # Obtener respuestas del usuario desde MongoDB
-    respuestas = prefs.find_one({"user_id": session['user_id']})
-
-    # Validación
-    if not respuestas:
-        flash("Debes completar el formulario de preferencias primero.", "warning")
-        return redirect(url_for('preguntas'))
-    
-    # 1. Generar el guion con OpenAI
-    guion = generar_guion_dinamico(respuestas)
-
-    # 2. Generar imágenes basadas en el guion
-    imagenes = generar_imagenes(guion)
-
-    # 3. Generar el audio
-    ruta_audio = generar_audio_con_elevenlabs(guion)
-
-    # 4. Crear el video
-    video_path = crear_video(imagenes, ruta_audio)
-
-    # Guardar el video en MongoDB
-    video = {
-        "user_id": session['user_id'],
-        "titulo": "Curso Personalizado",
-        "descripcion": guion[:200],
-        "script": guion,
-        "video_path": video_path
-    }
-    vids.insert_one(video)
-
-    flash("Curso generado exitosamente", "success")
-    return redirect(url_for('dashboard'))
-
-
-def generar_guion_dinamico(respuestas):
+def chat_with_fallback(messages, temperature=0.7):
     """
-    Genera el guion dinámico basado en las respuestas del usuario.
+    Intenta GPT-4 y, si falla por cuota, cae en GPT-3.5-turbo.
     """
-    prompt = f"""
-    Eres un experto creando cursos online. Crea un guion para un curso sobre el tema: {respuestas['intereses']}.
-    El estudiante tiene nivel {respuestas['experiencia']} y su objetivo es: {respuestas['objetivos']}.
-    El guion debe tener entre 350 y 500 palabras por sección y debe ser adecuado para un video de 3 a 4 minutos de duración.
+    try:
+        return openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=messages,
+            temperature=temperature
+        ).choices[0].message.content
+    except openai.error.RateLimitError:
+        logging.warning("❗ GPT-4 fuera de cuota, usando gpt-3.5-turbo")
+        return openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=temperature
+        ).choices[0].message.content
+
+class Tema:
+    def __init__(self, titulo: str, contenido: str, script: list[dict]):
+        self.titulo    = titulo
+        self.contenido = contenido
+        self.script    = script  # [{"id":…, "narration":…, "visual_description":…}, …]
+        self.video_id  = ""      # Ruta relativa al vídeo final
+
+class Curso:
+    def __init__(self, titulo: str):
+        self.titulo = titulo
+        self.topics: list[Tema] = []
+
+    def add_topic(self, tema: Tema):
+        self.topics.append(tema)
+
+    def generate_course_content(self) -> "Curso":
+        for topic in self.topics:
+            topic.video_id = self._generate_video_for_topic(topic)
+        return self
+
+    def _generate_video_for_topic(self, topic: Tema) -> str:
+        # Nombre seguro
+        safe_base = re.sub(r"[^\w]", "_", topic.titulo, flags=re.ASCII)
+
+        # Crear carpetas
+        os.makedirs("static/audios", exist_ok=True)
+        os.makedirs("static/imagenes", exist_ok=True)
+        os.makedirs("static/videos", exist_ok=True)
+
+        escena_files = []
+        for scene in topic.script:
+            sid = scene["id"]
+
+            # 1) Audio con gTTS
+            audio_rel = f"audios/{safe_base}_{sid}.mp3"
+            audio_out = os.path.join("static", audio_rel)
+            tts = gTTS(scene["narration"], lang="es")
+            tts.save(audio_out)
+            scene["audio_path"] = audio_rel
+            logging.info(f"🔊 Audio guardado en {audio_out}")
+
+            # 2) Imagen con DALL·E 3 (1024×1024)
+            img_rel = f"imagenes/{safe_base}_{sid}.png"
+            img_out = os.path.join("static", img_rel)
+            try:
+                resp = openai.Image.create(
+                    model="dall-e-3",
+                    prompt=scene["visual_description"],
+                    n=1,
+                    size="1024x1024",
+                    response_format="b64_json"
+                )
+                b64 = resp.data[0].b64_json
+                img_bytes = base64.b64decode(b64)
+                with open(img_out, "wb") as f:
+                    f.write(img_bytes)
+                logging.info(f"🖼 Imagen guardada en {img_out}")
+            except Exception as e:
+                logging.error(f"❌ DALL·E falló: {e}")
+                # Fallback: imagen negra
+                Image.new("RGB", (1024, 1024), (0, 0, 0)).save(img_out)
+                logging.warning(f"⚠️ Imagen fallback en {img_out}")
+            scene["image_path"] = img_rel
+
+            # 3) Vídeo de la escena con ffmpeg
+            vid_rel = f"videos/{safe_base}_{sid}.mp4"
+            vid_out = os.path.join("static", vid_rel)
+            subprocess.run([
+                "ffmpeg", "-y",
+                "-loop", "1", "-i", img_out,
+                "-i", audio_out,
+                "-c:v", "libx264", "-tune", "stillimage",
+                "-c:a", "aac", "-b:a", "192k",
+                "-pix_fmt", "yuv420p",
+                "-shortest",
+                vid_out
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            logging.info(f"✅ Escena vídeo creado en {vid_out}")
+
+            escena_files.append(os.path.abspath(vid_out))
+
+        # Si solo hay una escena, devolvemos esa ruta
+        if len(escena_files) == 1:
+            return escena_files[0].split("static/")[-1]
+
+        # 4) Concatenar varias escenas
+        list_txt = os.path.abspath(f"static/videos/{safe_base}_list.txt")
+        with open(list_txt, "w", encoding="utf-8") as f:
+            for fn in escena_files:
+                f.write(f"file '{fn}'\n")
+
+        final_rel = f"videos/{safe_base}_full.mp4"
+        final_out = os.path.join("static", final_rel)
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-f", "concat", "-safe", "0",
+            "-i", list_txt,
+            "-c", "copy",
+            final_out
+        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        logging.info(f"🎞 Vídeo final en static/{final_rel}")
+
+        return final_rel
+
+# ——— Funciones auxiliares de guión —————————————————————————————————
+
+def generar_guion(respuestas) -> str:
     """
-    
-    response = openai.Completion.create(
-        engine="text-davinci-003",  # Usar el modelo de OpenAI
-        prompt=prompt,
-        max_tokens=500
+    Genera el texto completo del curso usando GPT (con fallback).
+    """
+    prompt = (
+        f"Eres un profesor experto. Crea un curso introductorio dividido en 3 secciones, "
+        f"tema '{respuestas['intereses']}', nivel {respuestas['experiencia']}, "
+        f"objetivo '{respuestas['objetivos']}'.\n\n"
+        "Formato:\n"
+        "Curso 1: Título\nContenido... (350-500 palabras)\n\n"
+        "Curso 2: Título\nContenido... (350-500 palabras)\n\n"
+        "Curso 3: Título\nContenido... (350-500 palabras)\n"
     )
-    return response.choices[0].text.strip()
+    return chat_with_fallback([{"role": "user", "content": prompt}])
 
-
-def generar_imagenes(guion):
+def dividir_secciones(texto: str) -> list[tuple[str, str]]:
     """
-    Genera imágenes usando DALL·E 3 o una alternativa con base en el guion.
+    Separa el texto devuelto por GPT en [(titulo, cuerpo), ...].
     """
-    prompt_imagen = f"Genera imágenes para el tema: {guion[:150]}"  # Obtener las primeras 150 palabras para el prompt
-    response = openai.Image.create(
-        model="dall-e-3",  # Usar el modelo DALL-E 3
-        prompt=prompt_imagen,
-        n=1,
-        size="1024x1024",
-        response_format="b64_json"
-    )
-    
-    # Guardar la imagen en un archivo
-    imagen_b64 = response['data'][0]['b64_json']
-    imagen_bytes = base64.b64decode(imagen_b64)
-    ruta_imagen = "static/imagenes/curso_imagen.png"
-    with open(ruta_imagen, 'wb') as f:
-        f.write(imagen_bytes)
-    
-    return ruta_imagen
-
-
-def generar_audio_con_elevenlabs(guion):
-    """
-    Genera el audio del guion usando ElevenLabs.
-    """
-    audio = generate(
-        text=guion,
-        voice="Rachel",  # Puedes cambiar por cualquier voz disponible
-        model="eleven_monolingual_v1"
-    )
-
-    ruta_audio = "static/audios/curso_audio.mp3"
-    save(audio, ruta_audio)
-
-    return ruta_audio
-
-
-def crear_video(imagen_path, audio_path):
-    """
-    Crea un video combinando imagen y audio con FFmpeg.
-    """
-    output_path = "static/videos/curso_video.mp4"
-    subprocess.run([
-        "ffmpeg", "-y",
-        "-loop", "1", "-framerate", "2",  # Ajuste para video con una sola imagen
-        "-i", imagen_path,
-        "-i", audio_path,
-        "-c:v", "libx264", "-tune", "stillimage",
-        "-c:a", "aac", "-b:a", "192k",
-        "-pix_fmt", "yuv420p", "-shortest",  # El video durará lo mismo que el audio
-        output_path
-    ])
-
-    return output_path
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    partes = re.split(r"(?=Curso \d+:)", texto)
+    out = []
+    for p in partes:
+        p = p.strip()
+        if not p:
+            continue
+        titulo, _, cuerpo = p.partition("\n")
+        out.append((titulo.strip(), cuerpo.strip()))
+    return out
