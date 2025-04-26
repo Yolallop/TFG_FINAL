@@ -1,1 +1,25 @@
+# Entorno virtual
 venv/
+.venv/
+
+# Archivos Python compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Configuraciones locales y claves
+config.py
+*.env
+
+# Archivos de registro
+*.log
+
+# Directorios de medios generados
+static/audios/
+static/imagenes/
+static/videos/
+
+# Archivos de sistema (macOS, Windows)
+.DS_Store
+Thumbs.db

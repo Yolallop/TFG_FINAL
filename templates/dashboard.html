@@ -2,84 +2,84 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Bienvenido, {{ usuario }} 👋</h2>
+    <h2 class="text-primary">Bienvenido, {{ usuario }} 👋</h2>
 
     {% if respuestas %}
-        <div class="alert alert-info">
-            <strong>Intereses:</strong> {{ respuestas['intereses'] }}<br>
-            <strong>Objetivos:</strong> {{ respuestas['objetivos'] }}<br>
-            <strong>Experiencia:</strong> {{ respuestas['experiencia'] }}
-        </div>
+    <div class="alert alert-info">
+        <strong>Intereses:</strong> {{ respuestas['intereses'] }}<br>
+        <strong>Objetivos:</strong> {{ respuestas['objetivos'] }}<br>
+        <strong>Experiencia:</strong> {{ respuestas['experiencia'] }}
+    </div>
 
-        <div class="card p-4 mb-5 bg-light">
-            <h4>🎥 ¿Listo para aprender?</h4>
-            <p>Pulsa el botón para generar tu curso personalizado en video.</p>
-            <form action="{{ url_for('generar_curso') }}" method="POST">
-                <button type="submit" class="btn btn-success">🚀 Generar Curso Inteligente</button>
-            </form>
-        </div>
+    <!-- Card para generar el curso -->
+    <div class="card p-4 mb-5 bg-light shadow-sm">
+        <h4>¡Listo para aprender?</h4>
+        <p>Genera tu curso personalizado en video basado en tus preferencias. ¡Comienza ahora!</p>
+        <form action="{{ url_for('generar_curso') }}" method="POST">
+            <button type="submit" class="btn btn-success btn-lg w-100">Generar Curso Inteligente</button>
+        </form>
+    </div>
     {% else %}
-        <div class="alert alert-warning">
-            Aún no has respondido el formulario de preferencias.
-            <a href="{{ url_for('preguntas') }}">Completar ahora</a>.
-        </div>
+    <div class="alert alert-warning text-center">
+        Aún no has respondido el formulario de preferencias. 
+        <a href="{{ url_for('preguntas') }}" class="btn btn-info">Completar ahora</a>
+    </div>
     {% endif %}
 
-    <h3 class="mb-4" id="cursos">🎓 Tus Cursos Generados</h3>
-{% if videos %}
+    <h3 class="mt-5 mb-4" id="cursos">Tus Cursos Generados</h3>
+
+    {% if videos %}
     <div class="row g-4">
         {% for video in videos %}
-            <div class="col-md-6">
-                <div class="card card-video p-3">
-                    <h5>{{ video['titulo'] }}</h5>
-
-                    {% if video['imagen'] %}
-                        <img src="{{ url_for('static', filename='imagenes/' + video['imagen']) }}"
-                             alt="Miniatura de {{ video['titulo'] }}" class="thumb">
-                    {% else %}
-                        <img src="{{ url_for('static', filename='imagenes/default_image.png') }}"
-                             alt="Miniatura por defecto" class="thumb">
-                    {% endif %}
-
+        <div class="col-md-4 col-sm-6">
+            <div class="card shadow-sm">
+                <!-- Verificar si el video tiene miniatura personalizada -->
+                <img src="{{ url_for('static', filename='imagenes/' + (video['imagen'] if video['imagen'] else 'default_image.png')) }}" 
+                     alt="Miniatura de {{ video['titulo'] }}" class="card-img-top rounded-3">
+    
+                <div class="card-body">
+                    <h5 class="card-title">{{ video['titulo'] }}</h5>
+    
+                    <!-- Línea de depuración: Mostrar la ruta del video -->
+                    <p>{{ video['video_path'] }}</p> <!-- Esto te muestra la ruta del video en el navegador -->
+    
                     <!-- Mostrar el video generado -->
-                    <video controls style="width: 100%; max-height: 360px; object-fit: cover; border-radius: 12px;">
-                        <source src="{{ url_for('static', filename='videos/' + video['video_path']) }}" type="video/mp4">
+                    <video controls class="w-100" style="max-height:300px;object-fit:cover;border-radius:8px;">
+                        <source src="{{ url_for('static', filename=video['video_path']) }}" type="video/mp4">
                         Tu navegador no soporta el video.
-                    </video>
-
+                      </video>
+                      
                     <p class="mt-2">{{ video['descripcion'] }}</p>
-
-                    <details class="mt-2">
-                        <summary><strong>📜 Ver guion del video</strong></summary>
+    
+                    <details class="mt-3">
+                        <summary><strong>Ver guion del video</strong></summary>
                         <pre style="white-space: pre-wrap;">{{ video['script'] }}</pre>
                     </details>
                 </div>
             </div>
+        </div>
         {% endfor %}
     </div>
-{% else %}
-    <p class="text-muted">
-        Aún no has generado ningún curso. Comienza arriba con tu curso personalizado 🎥
-    </p>
-{% endif %}
-
-
-    <h3 class="mt-5 mb-4">🗒️ Evaluación de Comprensión</h3>
+    {% else %}
+    <div class="alert alert-info text-center">
+        Aún no has generado ningún curso. Comienza con tu curso personalizado.
+    </div>
+    {% endif %}
+    
+  
+    <h3 class="mt-5 mb-4">Evaluación de Comprensión</h3>
     <p>
-        ¿Estás listo para poner a prueba lo que has aprendido?
-        Realiza la prueba de comprensión para verificar tu conocimiento.
+        ¿Estás listo para poner a prueba lo que has aprendido? Realiza la prueba de comprensión para verificar tu conocimiento.
     </p>
-    <a href="{{ url_for('evaluacion') }}" class="btn btn-primary">
-        Realizar prueba de comprensión
-    </a>
+    <a href="{{ url_for('evaluacion') }}" class="btn btn-primary btn-lg">Realizar prueba de comprensión</a>
 
     <!-- Chatbot -->
-    <div class="card mt-5">
+    <div class="card mt-5 shadow-sm">
         <div class="card-header">
             <h4>Chatbot de Ayuda</h4>
         </div>
         <div class="card-body">
-            <div id="chatbot-container" style="max-height: 400px; overflow-y: scroll; margin-bottom: 10px;">
+            <div id="chatbot-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 10px;">
                 <!-- Aquí se mostrarán los mensajes -->
             </div>
             <div class="input-group">
@@ -94,7 +94,6 @@
     $(document).ready(function () {
         $("#send-chat").click(function () {
             const userMessage = $("#chat-input").val();
-
             if (userMessage.trim() !== "") {
                 // Mostrar el mensaje del usuario en el chat
                 const userHtml = `<div><strong>Tú:</strong> ${userMessage}</div>`;
@@ -118,4 +117,5 @@
         });
     });
 </script>
+
 {% endblock %}

@@ -114,7 +114,6 @@ def preguntas():
 
     return render_template('preguntas.html')
 
-# Dashboard de usuario
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
@@ -127,10 +126,64 @@ def dashboard():
     # Verificar si los archivos de video existen
     for video in videos:
         video_path = os.path.join('static', 'videos', video['video_path'])
-        if not os.path.exists(video_path):
+
+        if os.path.exists(video_path):
+            print(f"El archivo {video_path} existe, puedes proceder a mostrarlo")
+        else:
+            print(f"El archivo {video_path} no existe, maneja el error")
             flash(f"El video {video['video_path']} no se encuentra disponible.", 'danger')
 
+    # Renderizar el dashboard con la información
     return render_template('dashboard.html', usuario=usuario, respuestas=respuestas, videos=videos)
+
+@app.route('/generar_curso', methods=['POST'])
+def generar_curso():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    # 1) Recupero las respuestas del usuario
+    respuestas = prefs.find_one({"user_id": session['user_id']})
+    if not respuestas:
+        flash("Debes completar el formulario de preferencias primero.", "warning")
+        return redirect(url_for('preguntas'))
+
+    # 2) Genero el guion usando esas respuestas
+    guion = generar_guion_dinamico(respuestas)
+
+    # 3) Genero el vídeo y obtengo la ruta completa
+    ruta_video, video_imagenes = generar_video_completo(guion, max_videos=3)
+
+    # DEBUG opcional: imprime en consola la ruta completa que devolvió la función
+    print(f"[DEBUG] Video generado en ruta: {ruta_video}")
+    print("[DEBUG] contenidos de static/videos:", os.listdir("static/videos"))
+
+    # 4) Extraigo solo el nombre de fichero real del vídeo
+    basename = os.path.basename(ruta_video)  # ej. "final_video_1745686929.mp4"
+     print("[DEBUG] guardando en BD video_path =", f"videos/{basename}")
+
+    # 5) Selecciono la miniatura (si vino como lista, cojo la primera)
+    if isinstance(video_imagenes, list) and video_imagenes:
+        imagen_path = video_imagenes[0]
+    else:
+        imagen_path = video_imagenes
+
+    # 6) Quito el prefijo "static/" para almacenar en la BD
+    imagen_db = imagen_path.replace("static/", "")
+
+    # 7) Construyo y guardo el documento en Mongo, usando los nombres reales
+    video = {
+        "user_id": session['user_id'],
+        "titulo": "Curso Personalizado",
+        "descripcion": guion[:200],
+        "script": guion,
+        "video_path": f"videos/{basename}",  # coincide con static/videos/{basename}
+        "imagen": imagen_db                   # coincide con static/imagenes/{imagen_db}
+    }
+    vids.insert_one(video)
+
+    flash("Curso generado exitosamente 🎉", "success")
+    return redirect(url_for('dashboard'))
+
 
 # Función para generar guion
 # Función para generar guion
@@ -163,9 +216,18 @@ def generate_image(prompt, id):
 
 # Función para generar audio con gTTS
 def generate_audio(texto, id):
-    audio_file = os.path.join("static/audios", f"{id}.mp3")
+    """
+    Genera un MP3 desde un texto con gTTS, lo guarda en static/audios/{id}.mp3
+    y comprueba en consola que no esté vacío.
+    """
+    audio_file = os.path.join("static", "audios", f"{id}.mp3")
     tts = gTTS(text=texto, lang='es')
     tts.save(audio_file)
+
+    # DEBUG: comprueba que realmente se escribió algo
+    size = os.path.getsize(audio_file)
+    print(f"[DEBUG] Audio guardado en {audio_file}, {size} bytes")
+
     return audio_file
 
 # Función para generar video con FFmpeg
@@ -190,62 +252,57 @@ def combine_videos(video_parts, output_video):
     subprocess.run(command, shell=True, check=True)
 
 # Función para generar video completo
+import time  # Importa time para usar el timestamp
+
+# Función para generar el video completo
 def generar_video_completo(guion, max_videos):
     scenes = guion.split("\n\n")
     video_parts = []
     video_imagenes = []  # Lista de imágenes generadas
+    
     for idx, scene in enumerate(scenes[:max_videos]):
         prompt = f"Genera una imagen para: {scene}"
         image_path = generate_image(prompt, idx)
         audio_path = generate_audio(scene, idx)
-        video_path = os.path.join("static/videos", f"video_{idx}.mp4")
+        
+        # Usar timestamp para asegurar nombre único
+        timestamp = int(time.time())  # Obtener el tiempo actual en segundos
+        video_filename = f"video_{timestamp}_{idx}.mp4"  # Crear un nombre único basado en timestamp
+        
+        video_path = os.path.join("static/videos", video_filename)
         video_parts.append(video_path)
         generar_video_con_ffmpeg(image_path, audio_path, video_path)
+        
         video_imagenes.append(image_path)
 
-    final_video_path = "static/videos/final_video.mp4"
+    # Generar un nombre único para el video final usando timestamp
+    final_timestamp = int(time.time())  # Usamos el timestamp nuevamente para el video final
+    final_video_filename = f"final_video_{final_timestamp}.mp4"  # Nombre único basado en el timestamp
+    final_video_path = os.path.join("static/videos", final_video_filename)
+    
     combine_videos(video_parts, final_video_path)
 
     return final_video_path, video_imagenes
 
-# Ruta para generar el curso (video)
-@app.route('/generar_curso', methods=['POST'])
-def generar_curso():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    respuestas = prefs.find_one({"user_id": session['user_id']})
-    if not respuestas:
-        flash("Debes completar el formulario de preferencias primero.", "warning")
-        return redirect(url_for('preguntas'))
-
-    guion = generar_guion_dinamico(respuestas)
-
-    max_videos = 3
-    ruta_video, video_imagenes = generar_video_completo(guion, max_videos)
-
-    if not guion or not ruta_video or not video_imagenes:
-        flash("Hubo un problema al generar el curso, intenta nuevamente.", "danger")
-        return redirect(url_for('dashboard'))
-
-    if isinstance(video_imagenes, list):
-        video_imagenes = video_imagenes[0]
-
-    timestamp = int(time.time())
-    video_filename = f"video_{timestamp}.mp4"
+def guardar_video_en_bd(final_video_filename, guion, video_imagenes):
+    video_path = f"videos/{final_video_filename}"
+    print(f"Guardando video en: static/{video_path}")  # Imprime la ruta del video guardado
 
     video = {
         "user_id": session['user_id'],
         "titulo": "Curso Personalizado",
         "descripcion": guion[:200],
         "script": guion,
-        "video_path": f"videos/{video_filename}",
+        "video_path": video_path,
         "imagen": video_imagenes.replace("static/", "")
     }
 
+    # Verifica si el archivo realmente se ha guardado
+    if not os.path.exists(os.path.join('static', video_path)):
+        print(f"¡Error! El archivo {video_path} no se ha encontrado en static/videos/.")
+
     vids.insert_one(video)
     flash("Curso generado exitosamente 🎉", "success")
-    return redirect(url_for('dashboard'))  # Redirigir al dashboard después de generar el curso
 
 if __name__ == '__main__':
     app.run(debug=True)
