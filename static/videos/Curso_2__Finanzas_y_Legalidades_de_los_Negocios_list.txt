@@ -1,5 +1,0 @@
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Finanzas_y_Legalidades_de_los_Negocios_1.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Finanzas_y_Legalidades_de_los_Negocios_2.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Finanzas_y_Legalidades_de_los_Negocios_3.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Finanzas_y_Legalidades_de_los_Negocios_4.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Finanzas_y_Legalidades_de_los_Negocios_5.mp4'

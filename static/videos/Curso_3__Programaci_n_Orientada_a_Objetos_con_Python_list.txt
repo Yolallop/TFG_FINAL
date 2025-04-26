@@ -1,1 +1,0 @@
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Programaci_n_Orientada_a_Objetos_con_Python_3.mp4'

@@ -1,8 +1,0 @@
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Estrategias_de_Marketing_y_Crecimiento_1.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Estrategias_de_Marketing_y_Crecimiento_2.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Estrategias_de_Marketing_y_Crecimiento_3.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Estrategias_de_Marketing_y_Crecimiento_4.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Estrategias_de_Marketing_y_Crecimiento_5.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Estrategias_de_Marketing_y_Crecimiento_6.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Estrategias_de_Marketing_y_Crecimiento_7.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_3__Estrategias_de_Marketing_y_Crecimiento_8.mp4'

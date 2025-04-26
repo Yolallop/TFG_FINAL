@@ -1,6 +1,0 @@
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Desarrollo_de_Productos_y_Servicios_1.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Desarrollo_de_Productos_y_Servicios_2.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Desarrollo_de_Productos_y_Servicios_3.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Desarrollo_de_Productos_y_Servicios_4.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Desarrollo_de_Productos_y_Servicios_5.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Desarrollo_de_Productos_y_Servicios_6.mp4'
