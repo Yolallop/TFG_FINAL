@@ -1,3 +1,0 @@
-file 'static\videos/Curso_1__Introducción_al_Marketing_con_GENAI_1.mp4'
-file 'static\videos/Curso_1__Introducción_al_Marketing_con_GENAI_2.mp4'
-file 'static\videos/Curso_1__Introducción_al_Marketing_con_GENAI_3.mp4'

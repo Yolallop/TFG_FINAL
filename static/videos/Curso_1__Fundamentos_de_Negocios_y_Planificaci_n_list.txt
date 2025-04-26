@@ -1,6 +1,0 @@
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Fundamentos_de_Negocios_y_Planificaci_n_1.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Fundamentos_de_Negocios_y_Planificaci_n_2.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Fundamentos_de_Negocios_y_Planificaci_n_3.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Fundamentos_de_Negocios_y_Planificaci_n_4.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Fundamentos_de_Negocios_y_Planificaci_n_5.mp4'
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_1__Fundamentos_de_Negocios_y_Planificaci_n_6.mp4'

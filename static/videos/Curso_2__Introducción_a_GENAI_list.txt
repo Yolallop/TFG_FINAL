@@ -1,1 +1,0 @@
-file 'C:\Users\Yolal\OneDrive\TFG_FINAL\static\videos\Curso_2__Introducción_a_GENAI_2.mp4'

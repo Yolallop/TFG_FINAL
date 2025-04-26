@@ -1,7 +1,0 @@
-file 'static\videos/Curso_1__Conceptos_Básicos_y_Evaluación_de_Ideas_de_Negocio_1.mp4'
-file 'static\videos/Curso_1__Conceptos_Básicos_y_Evaluación_de_Ideas_de_Negocio_2.mp4'
-file 'static\videos/Curso_1__Conceptos_Básicos_y_Evaluación_de_Ideas_de_Negocio_3.mp4'
-file 'static\videos/Curso_1__Conceptos_Básicos_y_Evaluación_de_Ideas_de_Negocio_4.mp4'
-file 'static\videos/Curso_1__Conceptos_Básicos_y_Evaluación_de_Ideas_de_Negocio_5.mp4'
-file 'static\videos/Curso_1__Conceptos_Básicos_y_Evaluación_de_Ideas_de_Negocio_6.mp4'
-file 'static\videos/Curso_1__Conceptos_Básicos_y_Evaluación_de_Ideas_de_Negocio_7.mp4'
