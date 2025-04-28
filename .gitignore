@@ -8,7 +8,7 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Configuraciones locales y claves
+Configuraciones locales y claves
 config.py
 *.env
 
