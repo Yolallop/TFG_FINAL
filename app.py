@@ -1,308 +1,380 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-import logging
+import re
 import os
-import openai
-import bcrypt
-import requests
-from pathlib import Path
-from gtts import gTTS
 import time
 import subprocess
+import math
+import random
+import logging
+import requests
+import bcrypt
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from pydub import AudioSegment
 from pydub.utils import mediainfo
+from gtts import gTTS
+import openai
+from openai.error import RateLimitError, InvalidRequestError
 
-# Importar la clave de la API de OpenAI desde el archivo modelo.py
+from pymongo import MongoClient
 from config import OPENAI_API_KEY
 
-# Configuración de la aplicación Flask
+# Configuración de Flask
+tmp = os.path.dirname(__file__)
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = 'clave_super_secreta'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
 app.debug = True
 
-# Configuración de la API de OpenAI usando la clave importada
-openai.api_key = OPENAI_API_KEY
-
-# Configuración de MongoDB
-from pymongo import MongoClient
-mongo = MongoClient("mongodb://localhost:27017")
-db = mongo.tfg_db
-users = db.usuarios
-prefs = db.respuestas
-vids = db.videos
-
-# Crear carpetas necesarias
-os.makedirs("static/audios", exist_ok=True)
-os.makedirs("static/imagenes", exist_ok=True)
-os.makedirs("static/videos", exist_ok=True)
-
+# Logger
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.DEBUG)
+
+# API Key OpenAI
+openai.api_key = OPENAI_API_KEY
+
+# MongoDB
+db_client = MongoClient(os.getenv('MONGODB_URI', 'mongodb://localhost:27017/tfg_db'))
+db = db_client.tfg_db
+users = db.usuarios
+prefs = db.respuestas
+vids  = db.videos
+
+# Crear carpetas estáticas
+os.makedirs('static/audios', exist_ok=True)
+os.makedirs('static/imagenes', exist_ok=True)
+os.makedirs('static/videos', exist_ok=True)
+
+# ————— Helpers —————
+def split_por_secciones(guion: str):
+    """Divide el guion en secciones por doble salto de línea."""
+    bloques = [b.strip() for b in guion.split("\n\n") if len(b.strip()) > 30]
+    resultado = []
+    for idx, bloque in enumerate(bloques):
+        lineas = bloque.split("\n", 1)
+        if len(lineas) == 2:
+            titulo, contenido = lineas
+        else:
+            titulo = f"Sección {idx+1}"
+            contenido = bloque
+        resultado.append((titulo.strip(), contenido.strip()))
+    return resultado
+
+
+
+def limpiar_guion(texto: str) -> str:
+    """Elimina Markdown, muletillas y normaliza espacios del guion"""
+    texto = re.sub(r"[#\*\[\]\(\)`_]", "", texto)
+    muletillas = ["pues", "este", "o sea", "entonces", "bueno"]
+    for m in muletillas:
+        texto = re.sub(rf"\b{m}\b", "", texto, flags=re.IGNORECASE)
+    texto = re.sub(r"\n{3,}", "\n\n", texto)
+    texto = re.sub(r" {2,}", " ", texto)
+    return texto.strip()
+
+
+def call_gpt(model: str, messages: list, **kwargs):
+    """Llamadas a ChatCompletion con back-off ante RateLimitError"""
+    for attempt in range(3):
+        try:
+            return openai.ChatCompletion.create(model=model, messages=messages, **kwargs)
+        except RateLimitError:
+            wait = 2 ** attempt
+            logging.warning(f"RateLimitError en call_gpt, reintento en {wait}s")
+            time.sleep(wait)
+    raise
+
+def generar_guion_dinamico(respuestas: dict) -> str:
+    nivel = respuestas['experiencia']
+    tema = respuestas['intereses']
+    objetivo = respuestas['objetivos']
+    prompt = f"""
+Eres un profesor experto. El estudiante desea aprender:
+- Tema: {tema}
+- Nivel: {nivel}
+- Objetivo: {objetivo}
+
+Por favor, entrega un guion detallado y dividido en 4 a 6 secciones. 
+Cada sección debe tener un título DESCRIPTIVO y único (por ejemplo: "Estrategias de Marketing Digital en Redes Sociales", NO pongas "Sección 1").
+Después del título, escribe un contenido de 600 a 800 palabras con ejemplos reales.
+
+Formato solicitado:
+**Título de la sección**
+Contenido extenso aquí...
+
+IMPORTANTE:
+- No uses "Sección 1", "Sección 2", ni números.
+- No pongas marcas de Markdown excepto los títulos (**) si quieres.
+- Cada sección debe ser AUTÓNOMA y tener sentido por sí misma.
+- Solo texto plano. No añadas bullets, tablas ni listas.
+    """
+    resp = call_gpt(
+        model="gpt-4",
+        messages=[
+            {"role":"system","content":"Eres un profesor universitario experto en enseñar de forma clara."},
+            {"role":"user","content":prompt}
+        ],
+        max_tokens=6000,
+        temperature=0.5
+    )
+    return resp.choices[0].message.content.strip()
+
+def generar_prompt_imagen(texto: str) -> str:
+    resumen = f"Resumen del contenido: {texto[:500]}"  # Hasta 500 caracteres para mejor contexto
+    prompt_mejorado = f"Genera un prompt visual de 10-15 palabras que represente este contenido de programación:\n{resumen}"
+    
+    for intento in range(3):
+        try:
+            resp = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role":"system","content":"Eres un experto en generar prompts para imágenes educativas."},
+                    {"role":"user","content":prompt_mejorado}
+                ],
+                max_tokens=50,
+                temperature=0.7
+            )
+            return resp.choices[0].message.content.strip()
+        except RateLimitError:
+            wait = 2 ** intento
+            logging.warning(f"RateLimitError en generar_prompt_imagen, intento {intento+1}")
+            time.sleep(wait)
+        except InvalidRequestError as e:
+            logging.error(f"InvalidRequestError en generar_prompt_imagen: {e}")
+            break
+
+    return "Representación visual de programación de Python, estilo moderno, claro"
+
+
+def generate_image(prompt: str, id: str) -> str:
+    logging.debug(f"[generate_image] prompt: {prompt}")
+    try:
+        result = openai.Image.create(prompt=prompt, n=1, size="1024x1024")
+        url = result.data[0].url
+    except InvalidRequestError as e:
+        logging.error(f"Error en Image.create («{prompt}»): {e}")
+        return os.path.abspath("static/imagenes/fallback.png")
+    carpeta = os.path.abspath("static/imagenes").replace("\\","/")
+    os.makedirs(carpeta, exist_ok=True)
+    path = f"{carpeta}/{id}.png"
+    try:
+        r = requests.get(url, timeout=30)
+        r.raise_for_status()
+        with open(path, 'wb') as f:
+            f.write(r.content)
+    except Exception as e:
+        logging.error(f"No se pudo descargar la imagen de {url}: {e}")
+        return os.path.abspath("static/imagenes/fallback.png")
+    return path
+
+
+def generate_audio(texto: str, id: str) -> str:
+    path = os.path.join('static/audios', f"{id}.mp3")
+    gTTS(texto, lang='es').save(path)
+    return path
+
+
+def split_en_subbloques(texto: str, n: int) -> list[str]:
+    frases = re.split(r'(?<=[\.!?])\s+', texto.strip())
+    chunk = math.ceil(len(frases)/n)
+    return [' '.join(frases[i*chunk:(i+1)*chunk]) for i in range(n)]
+
+import random  # 👈 no olvides importar esto arriba
+
+def generar_videos_por_seccion(guion: str, max_slides: int = 6, min_duration: int = 180, max_duration: int = 300) -> list[tuple[str,str,str,str]]:
+    secciones = split_por_secciones(guion)[:max_slides]
+    resultados = []
+
+    for idx, (titulo, texto) in enumerate(secciones):
+        if es_titulo(titulo):
+            print(f"🔵 Título detectado (no genera video): {titulo}")
+            continue
+
+        bloques = split_en_subbloques(texto, n=5)  # Dividimos en 5 partes
+
+        imagenes = []
+        audios = []
+        clips = []
+
+        for sub_idx, bloque in enumerate(bloques):
+            if bloque.strip():
+                prompt = generar_prompt_imagen(bloque)
+                img_path = generate_image(prompt, f"sec{idx}_img{sub_idx}")
+                aud_path = generate_audio(bloque, f"sec{idx}_aud{sub_idx}")
+                imagenes.append(img_path)
+                audios.append(aud_path)
+
+                # Crear un clip para cada imagen+audio
+                duracion = float(AudioSegment.from_file(aud_path).duration_seconds)
+                out_tmp = os.path.join('static', 'videos', f"tmp_sec{idx}_part{sub_idx}_{int(time.time())}.mp4")
+                cmd = [
+                    'ffmpeg', '-y', '-loop', '1', '-framerate', '1',
+                    '-t', str(int(duracion)),
+                    '-i', img_path,
+                    '-i', aud_path,
+                    '-c:v', 'libx264', '-preset', 'veryfast',
+                    '-c:a', 'aac', '-b:a', '192k',
+                    '-pix_fmt', 'yuv420p', '-shortest', out_tmp
+                ]
+                subprocess.run(cmd, check=True)
+                clips.append(out_tmp)
+
+        # Concatenar los mini videos en uno solo
+        list_file = os.path.join('static', 'videos', f"list_sec{idx}.txt")
+        with open(list_file, 'w') as f:
+            for clip in clips:
+                f.write(f"file '{os.path.abspath(clip).replace('\\\\','/')}'\n")
+
+        final_output = os.path.join('static', 'videos', f"sec{idx}_{int(time.time())}.mp4")
+        cmd_concat = [
+            'ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', list_file,
+            '-c', 'copy', final_output
+        ]
+        subprocess.run(cmd_concat, check=True)
+
+        resultados.append((final_output, imagenes[0], titulo, texto))
+
+        # Limpiar temporales
+        for clip in clips:
+            os.remove(clip)
+        os.remove(list_file)
+
+    return resultados
+
+def es_titulo(texto: str) -> bool:
+    palabras = texto.lower().split()
+    palabras_titulo = ["introducción", "conclusión", "presentación", "inicio", "final", "resumen"]
+    return any(palabra in palabras for palabra in palabras_titulo) or len(palabras) < 5
+
+# ————— Rutas Flask —————
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# Registro de usuario
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['GET','POST'])
 def register():
-    if request.method == 'POST':
+    if request.method=='POST':
         nombre = request.form['nombre'].strip()
-        email = request.form['email'].lower().strip()
-        password = request.form['password'].encode('utf-8')
-
-        if users.find_one({"email": email}):
-            flash('El correo ya está registrado.', 'danger')
+        email  = request.form['email'].lower().strip()
+        pwd    = request.form['password'].encode('utf-8')
+        if users.find_one({'email':email}):
+            flash('Correo ya registrado','danger')
             return redirect(url_for('register'))
-
-        hashed = bcrypt.hashpw(password, bcrypt.gensalt())
-        users.insert_one({"nombre": nombre, "email": email, "password": hashed})
-        u = users.find_one({"email": email})
-        session['user_id'] = str(u['_id'])
-        session['usuario'] = nombre
-
+        hashed = bcrypt.hashpw(pwd, bcrypt.gensalt())
+        users.insert_one({'nombre':nombre,'email':email,'password':hashed})
+        u = users.find_one({'email':email})
+        session['user_id']=str(u['_id'])
+        session['usuario']=nombre
         return redirect(url_for('preguntas'))
     return render_template('register.html')
-@app.route('/evaluacion')
-def evaluacion():
-    return render_template('evaluacion.html')
 
-# Login de usuario
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET','POST'])
 def login():
-    if request.method == 'POST':
+    if request.method=='POST':
         email = request.form['email'].lower().strip()
-        password = request.form['password'].encode('utf-8')
-        u = users.find_one({"email": email})
-
-        if u and bcrypt.checkpw(password, u['password']):
-            session['user_id'] = str(u['_id'])
-            session['usuario'] = u['nombre']
+        pwd   = request.form['password'].encode('utf-8')
+        u = users.find_one({'email':email})
+        if u and bcrypt.checkpw(pwd, u['password']):
+            session['user_id']=str(u['_id'])
+            session['usuario']=u['nombre']
             return redirect(url_for('dashboard'))
-
-        flash('Credenciales incorrectas', 'danger')
-
+        flash('Credenciales incorrectas','danger')
     return render_template('login.html')
 
-# Logout de usuario
 @app.route('/logout')
 def logout():
     session.clear()
-    flash("Sesión cerrada", "info")
+    flash('Sesión cerrada','info')
     return redirect(url_for('home'))
 
-# Preguntas de usuario (preferencias)
-@app.route('/preguntas', methods=['GET', 'POST'])
+@app.route('/preguntas', methods=['GET','POST'])
 def preguntas():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        intereses = ",".join(request.form.getlist('intereses'))
+    if request.method=='POST':
+        intereses = ','.join(request.form.getlist('intereses'))
         objetivos = request.form['objetivos']
         experiencia = request.form['experiencia']
-
-        nueva_respuesta = {
-            "user_id": session['user_id'],
-            "intereses": intereses,
-            "objetivos": objetivos,
-            "experiencia": experiencia
-        }
-
-        prefs.replace_one({"user_id": session['user_id']}, nueva_respuesta, upsert=True)
+        prefs.replace_one({'user_id':session['user_id']}, {'user_id':session['user_id'],'intereses':intereses,'objetivos':objetivos,'experiencia':experiencia}, upsert=True)
         return redirect(url_for('dashboard'))
-
     return render_template('preguntas.html')
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    if 'user_id' not in session:
+        return jsonify({'respuesta':'Por favor, inicia sesión primero.'}), 401
+
+    user_msg = request.form.get('msg','').strip()
+    if not user_msg:
+        return jsonify({'respuesta':'Escribe algo para que pueda ayudarte.'})
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "Eres un asistente de ayuda amigable y experto."},
+                {"role": "user",   "content": user_msg}
+            ],
+            max_tokens=300,
+            temperature=0.7
+        )
+        bot_msg = response.choices[0].message.content.strip()
+    except Exception as e:
+        app.logger.error(f"Error en OpenAI Chat: {e}")
+        bot_msg = "Lo siento, algo ha fallado en el servidor."
+
+    return jsonify({"respuesta": bot_msg})
+
 
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
-    usuario = session['usuario']
-    respuestas = prefs.find_one({"user_id": session['user_id']})
-    videos = vids.find({"user_id": session['user_id']})
-
-    # Verificar si los archivos de video existen
-    for video in videos:
-        video_path = os.path.join('static', 'videos', video['video_path'])
-
-        if os.path.exists(video_path):
-            print(f"El archivo {video_path} existe, puedes proceder a mostrarlo")
-        else:
-            print(f"El archivo {video_path} no existe, maneja el error")
-            flash(f"El video {video['video_path']} no se encuentra disponible.", 'danger')
-
-    # Renderizar el dashboard con la información
-    return render_template('dashboard.html', usuario=usuario, respuestas=respuestas, videos=videos)
+    usuario     = session['usuario']
+    respuestas  = prefs.find_one({'user_id':session['user_id']})
+    videos_list = list(vids.find({'user_id':session['user_id']}))
+    for v in videos_list:
+        path = os.path.join('static','videos',v['video_path'])
+        if not os.path.exists(path):
+            flash(f"Falta {v['video_path']}",'danger')
+    return render_template('dashboard.html',usuario=usuario,respuestas=respuestas,videos=videos_list)
 
 @app.route('/generar_curso', methods=['POST'])
 def generar_curso():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    # 1) Recupero las respuestas del usuario
-    respuestas = prefs.find_one({"user_id": session['user_id']})
-    if not respuestas:
-        flash("Debes completar el formulario de preferencias primero.", "warning")
+    pref = prefs.find_one({'user_id': session['user_id']})
+    if not pref:
+        flash('Completa preferencias.', 'warning')
         return redirect(url_for('preguntas'))
 
-    # 2) Genero el guion usando esas respuestas
-    guion = generar_guion_dinamico(respuestas)
+    raw = generar_guion_dinamico(pref)
+    guion = limpiar_guion(raw)
+    partes = generar_videos_por_seccion(guion)
 
-    # 3) Genero el vídeo y obtengo la ruta completa
-    ruta_video, video_imagenes = generar_video_completo(guion, max_videos=3)
+    # 🛡️ PROTECCIÓN nueva aquí:
+    if not partes:
+        flash("No se pudo generar el curso porque no se detectaron secciones válidas.", "danger")
+        return redirect(url_for('dashboard'))
 
-    # DEBUG opcional: imprime en consola la ruta completa que devolvió la función
-    print(f"[DEBUG] Video generado en ruta: {ruta_video}")
-    print("[DEBUG] contenidos de static/videos:", os.listdir("static/videos"))
+    # Si hay partes, se guardan normalmente:
+    for ruta, img, titulo, texto in partes:
+        if ':' in titulo:
+            display_title = titulo.split(':',1)[1].strip()
+        else:
+            display_title = titulo
+        vids.insert_one({
+            'user_id': session['user_id'],
+            'titulo': display_title,
+            'descripcion': texto[:200],
+            'script': texto,
+            'video_path': os.path.basename(ruta),
+            'imagen': os.path.basename(img)
+        })
 
-    # 4) Extraigo solo el nombre de fichero real del vídeo
-    basename = os.path.basename(ruta_video)  # ej. "final_video_1745686929.mp4"
-     print("[DEBUG] guardando en BD video_path =", f"videos/{basename}")
-
-    # 5) Selecciono la miniatura (si vino como lista, cojo la primera)
-    if isinstance(video_imagenes, list) and video_imagenes:
-        imagen_path = video_imagenes[0]
-    else:
-        imagen_path = video_imagenes
-
-    # 6) Quito el prefijo "static/" para almacenar en la BD
-    imagen_db = imagen_path.replace("static/", "")
-
-    # 7) Construyo y guardo el documento en Mongo, usando los nombres reales
-    video = {
-        "user_id": session['user_id'],
-        "titulo": "Curso Personalizado",
-        "descripcion": guion[:200],
-        "script": guion,
-        "video_path": f"videos/{basename}",  # coincide con static/videos/{basename}
-        "imagen": imagen_db                   # coincide con static/imagenes/{imagen_db}
-    }
-    vids.insert_one(video)
-
-    flash("Curso generado exitosamente 🎉", "success")
+    flash(f"{len(partes)} mini-lecciones generadas 🎉", 'success')
     return redirect(url_for('dashboard'))
 
 
-# Función para generar guion
-# Función para generar guion
-def generar_guion_dinamico(respuestas):
-    prompt = f"""
-    Eres un experto creando cursos online. Crea un guion para un curso sobre el tema: {respuestas['intereses']}.
-    El estudiante tiene nivel {respuestas['experiencia']} y su objetivo es: {respuestas['objetivos']}.
-    El guion debe tener entre 350 y 500 palabras por sección y debe ser adecuado para un video de 3 a 4 minutos de duración.
-    """
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "Eres un profesor experto en crear cursos online."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=500
-    )
-    return response['choices'][0]['message']['content'].strip()
-
-# Función para generar imágenes con OpenAI
-def generate_image(prompt, id):
-    result = openai.Image.create(prompt=prompt, n=1, size="1024x1024")
-    image_url = result['data'][0]['url']
-    image_path = os.path.join("static/imagenes", f"{id}.png")
-    response = requests.get(image_url, timeout=30)
-    if response.status_code == 200:
-        with open(image_path, "wb") as f:
-            f.write(response.content)
-    return image_path
-
-# Función para generar audio con gTTS
-def generate_audio(texto, id):
-    """
-    Genera un MP3 desde un texto con gTTS, lo guarda en static/audios/{id}.mp3
-    y comprueba en consola que no esté vacío.
-    """
-    audio_file = os.path.join("static", "audios", f"{id}.mp3")
-    tts = gTTS(text=texto, lang='es')
-    tts.save(audio_file)
-
-    # DEBUG: comprueba que realmente se escribió algo
-    size = os.path.getsize(audio_file)
-    print(f"[DEBUG] Audio guardado en {audio_file}, {size} bytes")
-
-    return audio_file
-
-# Función para generar video con FFmpeg
-def generar_video_con_ffmpeg(imagen, audio, output_video):
-    audio_duration = get_audio_duration(audio)
-    command = [
-        'ffmpeg', '-y', '-loop', '1', '-framerate', '2', '-t', str(audio_duration),
-        '-i', imagen, '-i', audio, '-c:v', 'libx264', '-preset', 'veryfast',
-        '-c:a', 'aac', '-b:a', '192k', '-pix_fmt', 'yuv420p', '-shortest', output_video
-    ]
-    subprocess.run(command, check=True)
-
-# Función para obtener duración de audio
-def get_audio_duration(audio_path):
-    info = mediainfo(audio_path)
-    return float(info['duration'])
-
-# Función para combinar videos generados
-def combine_videos(video_parts, output_video):
-    inputs = " ".join([f"-i \"{os.path.abspath(video)}\"" for video in video_parts])
-    command = f"ffmpeg {inputs} -c copy {os.path.abspath(output_video)}"
-    subprocess.run(command, shell=True, check=True)
-
-# Función para generar video completo
-import time  # Importa time para usar el timestamp
-
-# Función para generar el video completo
-def generar_video_completo(guion, max_videos):
-    scenes = guion.split("\n\n")
-    video_parts = []
-    video_imagenes = []  # Lista de imágenes generadas
-    
-    for idx, scene in enumerate(scenes[:max_videos]):
-        prompt = f"Genera una imagen para: {scene}"
-        image_path = generate_image(prompt, idx)
-        audio_path = generate_audio(scene, idx)
-        
-        # Usar timestamp para asegurar nombre único
-        timestamp = int(time.time())  # Obtener el tiempo actual en segundos
-        video_filename = f"video_{timestamp}_{idx}.mp4"  # Crear un nombre único basado en timestamp
-        
-        video_path = os.path.join("static/videos", video_filename)
-        video_parts.append(video_path)
-        generar_video_con_ffmpeg(image_path, audio_path, video_path)
-        
-        video_imagenes.append(image_path)
-
-    # Generar un nombre único para el video final usando timestamp
-    final_timestamp = int(time.time())  # Usamos el timestamp nuevamente para el video final
-    final_video_filename = f"final_video_{final_timestamp}.mp4"  # Nombre único basado en el timestamp
-    final_video_path = os.path.join("static/videos", final_video_filename)
-    
-    combine_videos(video_parts, final_video_path)
-
-    return final_video_path, video_imagenes
-
-def guardar_video_en_bd(final_video_filename, guion, video_imagenes):
-    video_path = f"videos/{final_video_filename}"
-    print(f"Guardando video en: static/{video_path}")  # Imprime la ruta del video guardado
-
-    video = {
-        "user_id": session['user_id'],
-        "titulo": "Curso Personalizado",
-        "descripcion": guion[:200],
-        "script": guion,
-        "video_path": video_path,
-        "imagen": video_imagenes.replace("static/", "")
-    }
-
-    # Verifica si el archivo realmente se ha guardado
-    if not os.path.exists(os.path.join('static', video_path)):
-        print(f"¡Error! El archivo {video_path} no se ha encontrado en static/videos/.")
-
-    vids.insert_one(video)
-    flash("Curso generado exitosamente 🎉", "success")
-
 if __name__ == '__main__':
     app.run(debug=True)
+
+
