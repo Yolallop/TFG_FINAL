@@ -2,24 +2,39 @@
 venv/
 .venv/
 
-# Archivos Python compilados
+# Archivos Python compilados y caches
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 
-Configuraciones locales y claves
+# Configuraciones locales y claves
 config.py
 *.env
+
+# Bases de datos locales
+*.sqlite3
 
 # Archivos de registro
 *.log
 
-# Directorios de medios generados
+# Medios generados (audio, imágenes, vídeos)
 static/audios/
 static/imagenes/
 static/videos/
 
-# Archivos de sistema (macOS, Windows)
+# Activos compilados (si llegas a usar SASS, Webpack, etc.)
+static/css/
+static/js/
+
+# Archivos de sistema
 .DS_Store
 Thumbs.db
+
+# IDEs / editores
+.vscode/
+.idea/
+*.sublime-*
+
+# Coverage / testing
+htmlcov/
+.coverage

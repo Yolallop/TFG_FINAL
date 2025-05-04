@@ -2,163 +2,302 @@
 
 {% block content %}
 <style>
-  .sidebar { background: linear-gradient(180deg, #3498db, #2980b9); color: #fff; min-height: 100vh; }
-  .sidebar .nav-link { color: rgba(255,255,255,0.9); margin-bottom: 10px; }
-  .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,0.3); border-radius: 4px; }
-  .btn-generate { background: linear-gradient(to right, #e74c3c, #c0392b); border: none; font-weight: bold; transition: 0.3s ease-in-out; }
-  .btn-generate:hover { background: #c0392b; transform: scale(1.05); }
-  .section-header { border-left: 4px solid #2980b9; padding-left: 12px; margin-bottom: 16px; color: #2980b9; }
-  .card-custom { border: none; border-radius: 8px; transition: transform 0.2s; }
-  .card-custom:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-  .section-banner { background-color: #000; color: #fff; text-align: center; padding: 0.5rem 1rem; font-weight: bold; border-radius: 8px; margin-bottom: 1rem; }
+  .sidebar {
+    background: linear-gradient(180deg, #3498db, #2980b9);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar .nav-link {
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 10px;
+  }
+  .sidebar .nav-link.active {
+    color: #fff;
+    background: rgba(255,255,255,0.3);
+    border-radius: 4px;
+  }
+  .btn-generate {
+    background: linear-gradient(to right, #e74c3c, #c0392b);
+    border: none;
+    font-weight: bold;
+    transition: transform 0.2s;
+    margin-top: auto;
+  }
+  .btn-generate:hover {
+    background: #c0392b;
+    transform: scale(1.05);
+  }
+  .section-header {
+    border-left: 4px solid #2980b9;
+    padding-left: 12px;
+    margin-bottom: 16px;
+    color: #2980b9;
+  }
+  .script-container {
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    background: #f8f9f9;
+    padding: 0.5rem;
+    border-radius: 4px;
+  }
 </style>
 
 <div class="d-flex">
   <!-- Sidebar -->
   <aside class="sidebar p-4">
     <h3 class="mb-5">✨ Panel {{ usuario }}</h3>
-    <nav class="nav flex-column">
-      <a class="nav-link active" href="#cursos"><i class="bi bi-book-fill me-2"></i>Cursos</a>
-      <a class="nav-link" href="#nuevos"><i class="bi bi-stars me-2"></i>Solicitar Curso</a>
-      <a class="nav-link" href="#calendario"><i class="bi bi-calendar3 me-2"></i>Calendario</a>
-      <a class="nav-link" href="#chat"><i class="bi bi-chat-dots-fill me-2"></i>Chatbot</a>
+    <nav class="nav flex-column mb-4">
+      <a class="nav-link{% if request.endpoint=='mis_cursos_view' %} active{% endif %}"
+         href="{{ url_for('mis_cursos_view') }}">
+        📚 Mis Cursos
+      </a>
+      <a class="nav-link{% if request.endpoint=='dashboard' %} active{% endif %}" href="#nuevos">
+        ⭐ Solicitar Curso
+      </a>
+           
+      <a class="nav-link" href="{{ url_for('dashboard') }}#calendario">📆 Calendario</a>
+      <a class="nav-link" href="{{ url_for('dashboard') }}#chat">💬 Chatbot</a>
+      <a class="nav-link text-warning mt-3" href="{{ url_for('logout') }}">🔓 Cerrar Sesión</a>
     </nav>
-    <form action="{{ url_for('generar_curso') }}" method="post" class="mt-5">
-      <button type="submit" class="btn btn-generate w-100 text-white">
-        <i class="bi bi-lightning-charge-fill me-1"></i> Generar Curso
-      </button>
+    <form action="{{ url_for('generar_curso_inicial') }}" method="post">
+      <button type="submit" class="btn btn-generate w-100 text-white">⚡ Generar Curso Rápido</button>
+    </form>
+    
     </form>
   </aside>
 
   <!-- Main -->
   <main class="flex-grow-1 p-5 bg-light">
-    <!-- Cabecera -->
+
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Bienvenida, {{ usuario }}!</h2>
-      <div class="text-muted"><script>document.write(new Date().toLocaleDateString());</script></div>
+      <div class="text-muted">
+        <script>document.write(new Date().toLocaleDateString());</script>
+      </div>
     </div>
 
-    <!-- Cursos Generados -->
+    <!-- Cursos en Progreso -->
     <section id="cursos">
-      <h4 class="section-header">Cursos Generados</h4>
-      {% if videos %}
-      <div class="row g-4">
-        {% for video in videos %}
-        <div class="col-lg-4 col-md-6">
-          <div class="card card-custom h-100">
-            <div class="card-body d-flex flex-column">
+      <h4 class="section-header">Cursos en Progreso</h4>
+      {% set en_progreso = mis_cursos|selectattr('completed','equalto',False)|list %}
+      {% if en_progreso %}
+        <div class="row g-4 mb-5">
+          {% for curso in en_progreso %}
+            <div class="col-lg-6">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h5>{{ curso.tema }}</h5>
+                  <p class="text-muted mb-1">
+                    Nivel: {{ curso.experiencia }} · Objetivos: {{ curso.objetivos }}
+                  </p>
+                  <small class="text-muted">
+                    Creado: {{ curso.created_at.strftime('%d/%m/%Y') }}
+                  </small>
+                  <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#det-{{ curso._id }}">
+                      Ver {{ curso.lecciones_detalle|length }} lecciones
+                    </button>
+                    <form action="{{ url_for('complete_curso', curso_id=curso._id) }}"
+                          method="post" class="d-inline ms-2">
+                      <button class="btn btn-success btn-sm">Marcar completado</button>
+                    </form>
+                  </div>
 
-              <!-- Banner de sección -->
-              <div class="section-banner">
-                Parte {{ loop.index }}: {{ video.titulo }}
+                  <div class="collapse mt-3" id="det-{{ curso._id }}">
+                    <div class="card-body border-top">
+                      {% for lec in curso.lecciones_detalle %}
+                        <div class="mb-4">
+                          <strong>Parte {{ loop.index }}:</strong> {{ lec.titulo }}
+                          <div class="mt-2">
+                            <video controls class="w-100 rounded" style="max-height:200px;">
+                              <source src="{{ url_for('static', filename='videos/' ~ lec.video_path) }}" type="video/mp4">
+                            </video>
+                          </div>
+                          <!-- Guion completo -->
+                          <div class="mt-3">
+                            <h6>Guion completo</h6>
+                            <div class="script-container">{{ lec.script }}</div>
+                          </div>
+                          <!-- Fuentes RAG -->
+                          <button class="btn btn-sm btn-outline-secondary mt-2"
+                                  onclick="toggleFuentes('{{ curso._id }}_{{ loop.index0 }}')">
+                            🔍 Ver fuentes RAG
+                          </button>
+                          <div id="fuentes-{{ curso._id }}_{{ loop.index0 }}"
+                               style="display:none; margin-top:0.5rem; padding:0.5rem; border:1px solid #ddd;">
+                            <h6>Fuentes usadas:</h6>
+                            <ul class="mb-0">
+                              {% for f in lec.fuentes %}
+                                <li class="mb-2">
+                                  <strong>{{ f.title }}</strong><br>
+                                  <em>{{ f.snippet }}</em><br>
+                                  <a href="{{ f.link }}" target="_blank">{{ f.link }}</a>
+                                </li>
+                              {% endfor %}
+                            </ul>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+
+                </div>
               </div>
-
-              <!-- Miniatura en lugar de vídeo -->
-              <img
-                src="{{ url_for('static', filename='imagenes/' ~ video.imagen) }}"
-                class="card-img-top mb-3 rounded"
-                alt="Miniatura de {{ video.titulo }}"
-                style="height:150px; object-fit:cover;"
-              >
-
-              <!-- Botón para ver detalle -->
-              <button
-                class="btn btn-outline-primary mt-auto"
-                data-bs-toggle="modal"
-                data-bs-target="#modal{{ loop.index0 }}"
-              >Ver Detalle</button>
-
             </div>
-          </div>
+          {% endfor %}
         </div>
-
-        <!-- Modal detalle con vídeo y guion -->
-        <div class="modal fade" id="modal{{ loop.index0 }}" tabindex="-1">
-          <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Parte {{ loop.index }}: {{ video.titulo }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body">
-                <video controls class="w-100 mb-3 rounded">
-                  <source src="{{ url_for('static', filename='videos/' ~ video.video_path) }}" type="video/mp4">
-                  Tu navegador no soporta vídeo HTML5.
-                </video>
-                <h6>Guion</h6>
-                <pre class="p-3 bg-light rounded" style="white-space:pre-wrap;">{{ video.script }}</pre>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
       {% else %}
-      <div class="alert alert-info">No hay cursos generados aún.</div>
+        <div class="alert alert-info">No tienes cursos en progreso.</div>
       {% endif %}
     </section>
 
-    <!-- Solicitar Curso -->
-    <section id="nuevos" class="mt-5">
-      <h4 class="section-header">Solicitar Nuevo Curso</h4>
-      <div class="p-4 bg-white rounded shadow-sm">
-        <form action="{{ url_for('generar_curso') }}" method="post">
-          <div class="mb-3">
-            <label for="tema" class="form-label">Tema del curso</label>
-            <input type="text" id="tema" name="tema" class="form-control" placeholder="Ej. Python Avanzado" required>
-          </div>
-          <div class="mb-3">
-            <label for="objetivos" class="form-label">Objetivos</label>
-            <textarea id="objetivos" name="objetivos" class="form-control" rows="2" placeholder="Describe qué quieres aprender" required></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="experiencia" class="form-label">Nivel de experiencia</label>
-            <select id="experiencia" name="experiencia" class="form-select">
-              <option>Básico</option>
-              <option>Intermedio</option>
-              <option>Avanzado</option>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-generate">Generar Curso</button>
-        </form>
-      </div>
+    <!-- Cursos Realizados -->
+    <section id="cursos-realizados">
+      <h4 class="section-header mt-5">Cursos Realizados</h4>
+      {% set completados = mis_cursos|selectattr('completed','equalto',True)|list %}
+      {% if completados %}
+        <div class="row g-4 mb-5">
+          {% for curso in completados %}
+            <div class="col-lg-6">
+              <div class="card h-100 border-success">
+                <div class="card-body">
+                  <h5>{{ curso.tema }} ✓</h5>
+                  <small class="text-muted">
+                    Completado: {{ curso.completed_at.strftime('%d/%m/%Y') }}
+                  </small>
+                  <div class="mt-3">
+                    <button class="btn btn-outline-secondary btn-sm"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#det2-{{ curso._id }}">
+                      Ver contenido
+                    </button>
+                  </div>
+                  <div class="collapse mt-3" id="det2-{{ curso._id }}">
+                    <div class="card-body border-top">
+                      {% for lec in curso.lecciones_detalle %}
+                        <div class="mb-4">
+                          <strong>Parte {{ loop.index }}:</strong> {{ lec.titulo }}
+                          <div class="mt-2">
+                            <video controls class="w-100 rounded" style="max-height:200px;">
+                              <source src="{{ url_for('static', filename='videos/' ~ lec.video_path) }}" type="video/mp4">
+                            </video>
+                          </div>
+                          <div class="mt-3">
+                            <h6>Guion completo</h6>
+                            <div class="script-container">{{ lec.script }}</div>
+                          </div>
+                          <button class="btn btn-sm btn-outline-secondary mt-2"
+                                  onclick="toggleFuentes('{{ curso._id }}_comp_{{ loop.index0 }}')">
+                            🔍 Ver fuentes RAG
+                          </button>
+                          <div id="fuentes-{{ curso._id }}_comp_{{ loop.index0 }}"
+                               style="display:none; margin-top:0.5rem; padding:0.5rem; border:1px solid #ddd;">
+                            <h6>Fuentes usadas:</h6>
+                            <ul class="mb-0">
+                              {% for f in lec.fuentes %}
+                                <li class="mb-2">
+                                  <strong>{{ f.title }}</strong><br>
+                                  <em>{{ f.snippet }}</em><br>
+                                  <a href="{{ f.link }}" target="_blank">{{ f.link }}</a>
+                                </li>
+                              {% endfor %}
+                            </ul>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-info">No tienes cursos realizados aún.</div>
+      {% endif %}
     </section>
 
+   <!-- Solicitar Nuevo Curso -->
+<section id="nuevos">
+  <h4 class="section-header mt-5">Solicitar Nuevo Curso</h4>
+  <div class="p-4 bg-white rounded shadow-sm mb-5">
+    <!-- Reutilizamos generar_curso_personalizado -->
+    <form action="{{ url_for('generar_curso_personalizado') }}" method="post">
+      <div class="mb-3">
+        <label for="tema" class="form-label">Tema del curso</label>
+        <input type="text" id="tema" name="tema" class="form-control" placeholder="Ej. Python Avanzado" required>
+      </div>
+      <div class="mb-3">
+        <label for="objetivos" class="form-label">Objetivos</label>
+        <textarea id="objetivos" name="objetivos" class="form-control" rows="2" placeholder="Describe qué quieres aprender" required></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="experiencia" class="form-label">Nivel de experiencia</label>
+        <select id="experiencia" name="experiencia" class="form-select" required>
+          <option value="Básico">Básico</option>
+          <option value="Intermedio">Intermedio</option>
+          <option value="Avanzado">Avanzado</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-generate w-100 text-white">⚡ Generar Curso</button>
+    </form>
+  </div>
+</section>
+
+
     <!-- Calendario -->
-    <section id="calendario" class="mt-5">
+    <section id="calendario">
       <h4 class="section-header">Calendario</h4>
-      <div class="p-4 bg-white rounded shadow-sm text-center">
+      <div class="p-4 bg-white rounded shadow-sm text-center mb-5">
         <i class="bi bi-calendar-event fs-2 mb-2 text-primary"></i>
         <p class="mb-0">Selecciona una fecha para ver actividades</p>
       </div>
     </section>
 
     <!-- Chatbot -->
-    <section id="chat" class="mt-5">
+    <section id="chat">
       <h4 class="section-header">Chatbot de Ayuda</h4>
       <div class="card p-3 shadow-sm chat-container">
         <div id="chatbot-container" class="d-flex flex-column" style="height:250px; overflow-y:auto; background:#f8f9ff; padding:10px;"></div>
         <div class="input-group mt-2">
           <input id="chat-input" type="text" class="form-control" placeholder="Escribe tu mensaje…">
-          <button id="send-chat" class="btn btn-primary">
-            <i class="bi bi-send-fill me-1"></i>Enviar
-          </button>
+          <button id="send-chat" class="btn btn-primary"><i class="bi bi-send-fill me-1"></i>Enviar</button>
         </div>
       </div>
     </section>
+
   </main>
 </div>
 
 <script>
-  document.getElementById('send-chat').onclick = () => {
-    const input = document.getElementById('chat-input');
-    const msg   = input.value.trim(); if (!msg) return;
-    const ctl   = document.getElementById('chatbot-container');
-    const userDiv = document.createElement('div'); userDiv.className='chat-message user'; userDiv.innerHTML=`<div class="bubble user"><strong>Tú:</strong> ${msg}</div>`; ctl.appendChild(userDiv); ctl.scrollTop=ctl.scrollHeight; input.value='';
-    fetch('/chat',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({msg})})
-      .then(r=>r.json()).then(d=>{const aiDiv=document.createElement('div'); aiDiv.className='chat-message ai'; aiDiv.innerHTML=`<div class="bubble ai"><strong>AI:</strong> ${d.respuesta}</div>`; ctl.appendChild(aiDiv); ctl.scrollTop=ctl.scrollHeight;});
+  function toggleFuentes(id) {
+    const el = document.getElementById('fuentes-' + id);
+    el.style.display = (el.style.display === 'none' ? 'block' : 'none');
+  }
+  document.getElementById('send-chat').addEventListener('click', () => {
+    const input = document.getElementById('chat-input'),
+          msg   = input.value.trim(),
+          ctl   = document.getElementById('chatbot-container');
+    if (!msg) return;
+    ctl.innerHTML += `<div class="bubble user mb-2"><strong>Tú:</strong> ${msg}</div>`;
+    ctl.scrollTop = ctl.scrollHeight;
+    input.value = '';
+    fetch('/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({msg})
+    })
+    .then(r => r.json())
+    .then(d => {
+      ctl.innerHTML += `<div class="bubble ai mb-2"><strong>AI:</strong> ${d.respuesta}</div>`;
+      ctl.scrollTop = ctl.scrollHeight;
+    });
+  });
 </script>
 {% endblock %}
