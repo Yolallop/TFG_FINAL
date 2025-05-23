@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">📚 Mis Cursos</h2>
+
+  {# Cursos en progreso #}
+  <h4 class="mb-3">En Progreso</h4>
+  {% if mis_cursos|selectattr('completed','equalto',False)|list %}
+    <div class="row g-4 mb-5">
+      {% for curso in mis_cursos if not curso.completed %}
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title">{{ curso.tema }}</h5>
+              <p class="card-text text-muted mb-1">
+                Nivel: {{ curso.experiencia }} · Objetivos: {{ curso.objetivos }}
+              </p>
+              <p class="card-text"><small class="text-muted">
+                Creado: {{ curso.created_at.strftime("%d/%m/%Y") }}
+              </small></p>
+              <a class="btn btn-outline-primary btn-sm"
+                 data-bs-toggle="collapse"
+                 href="#collapse-{{ curso._id }}">
+                Ver {{ curso.lecciones_detalle|length }} lecciones
+              </a>
+              <form action="{{ url_for('complete_curso', curso_id=curso._id) }}"
+                    method="post" class="d-inline ms-2">
+                <button class="btn btn-success btn-sm">Marcar completado</button>
+              </form>
+              <div class="collapse mt-3" id="collapse-{{ curso._id }}">
+                {% for lec in curso.lecciones_detalle %}
+                  <div class="mb-3">
+                    <strong>Parte {{ loop.index }}:</strong> {{ lec.titulo }}
+                    <div class="mt-2">
+                      <video controls class="w-100 rounded" style="max-height:180px;">
+                        <source src="{{ url_for('static', filename='videos/' ~ lec.video_path) }}" type="video/mp4">
+                      </video>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">No tienes cursos en progreso.</div>
+  {% endif %}
+
+  {# Cursos completados #}
+  <h4 class="mb-3">Completados</h4>
+  {% if mis_cursos|selectattr('completed','equalto',True)|list %}
+    <div class="row g-4">
+      {% for curso in mis_cursos if curso.completed %}
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title">{{ curso.tema }} ✓</h5>
+              <p class="card-text"><small class="text-muted">
+                Completado: {{ curso.completed_at.strftime("%d/%m/%Y") }}
+              </small></p>
+              <a class="btn btn-outline-secondary btn-sm"
+                 data-bs-toggle="collapse"
+                 href="#collapse-{{ curso._id }}">
+                Ver contenido
+              </a>
+              <div class="collapse mt-3" id="collapse-{{ curso._id }}">
+                {% for lec in curso.lecciones_detalle %}
+                  <div class="mb-3">
+                    <strong>Parte {{ loop.index }}:</strong> {{ lec.titulo }}
+                    <div class="mt-2">
+                      <video controls class="w-100 rounded" style="max-height:180px;">
+                        <source src="{{ url_for('static', filename='videos/' ~ lec.video_path) }}" type="video/mp4">
+                      </video>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">No has completado ningún curso aún.</div>
+  {% endif %}
+
+</div>
+{% endblock %}

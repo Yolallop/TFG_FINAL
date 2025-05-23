@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">⭐ Solicitar Nuevo Curso</h2>
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form action="{{ url_for('solicitar_curso') }}" method="post">
+        <div class="mb-3">
+          <label for="tema" class="form-label">Tema del curso</label>
+          <input
+            type="text"
+            id="tema"
+            name="tema"
+            class="form-control"
+            placeholder="Ej. Python Avanzado"
+            required
+          >
+        </div>
+        <div class="mb-3">
+          <label for="objetivos" class="form-label">Objetivos</label>
+          <textarea
+            id="objetivos"
+            name="objetivos"
+            class="form-control"
+            rows="3"
+            placeholder="Describe qué quieres aprender"
+            required
+          ></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="experiencia" class="form-label">Nivel de experiencia</label>
+          <select
+            id="experiencia"
+            name="experiencia"
+            class="form-select"
+            required
+          >
+            <option value="Básico">Básico</option>
+            <option value="Intermedio">Intermedio</option>
+            <option value="Avanzado">Avanzado</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-lightning-charge-fill me-1"></i>
+          Generar Curso
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

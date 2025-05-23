@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Resultados Quiz – Mi Plataforma{% endblock %}
+
+{% block content %}
+<div class="p-5">
+  <h2>Resultados del Quiz</h2>
+  <p>Has acertado {{ aciertos }} de {{ total }} preguntas.</p>
+  <hr>
+
+  {% for r in respuestas %}
+    <div class="mb-4">
+      <p><strong>Q{{ loop.index }}. {{ r.pregunta }}</strong></p>
+      <ul class="list-group">
+        {% set letras = ['A','B','C','D','E','F'] %}
+        {% for opt in r.opciones %}
+          {% set idx = loop.index0 %}
+          {% set letra = letras[idx] %}
+          {% set clean = opt.split(') ',1)[1] if ') ' in opt else opt %}
+          {% set cls = '' %}
+          {% if idx == r.correcta %}    {% set cls = 'list-group-item-success' %}{% endif %}
+          {% if idx == r.seleccion and not r.acertada %} {% set cls = 'list-group-item-danger' %}{% endif %}
+
+          <li class="list-group-item {{ cls }}">
+            {{ letra }}) {{ clean }}
+            {% if idx == r.seleccion %}
+              &nbsp;<strong>(Tu respuesta)</strong>
+            {% endif %}
+            {% if idx == r.correcta %}
+              &nbsp;<strong>(Correcta)</strong>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor %}
+
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">Volver al Dashboard</a>
+</div>
+{% endblock %}

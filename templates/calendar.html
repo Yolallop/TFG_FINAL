@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="section-header">
+    <i class="fas fa-calendar-alt"></i> Calendario
+  </div>
+  <div id="calendar" style="background: #fff; border-radius: 12px; padding: 1rem;"></div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView:    'dayGridMonth',
+      locale:         'es',
+      themeSystem:    'standard',
+      headerToolbar: {
+        left:   'prev,next today',
+        center: 'title',
+        right:  'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      buttonText: {
+        today: 'Hoy',
+        month: 'Mes',
+        week: 'Semana',
+        day: 'Día'
+      },
+      navLinks:       true,
+      editable:       false,
+      dayMaxEvents:   true,
+      events:         '/api/events'  // tu ruta Flask
+    });
+    calendar.render();
+  });
+</script>
+{% endblock %}

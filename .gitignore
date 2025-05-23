@@ -1,0 +1,40 @@
+# Entorno virtual
+venv/
+.venv/
+
+# Archivos Python compilados y caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+#Configuraciones locales y claves
+config.py
+*.env
+
+# Bases de datos locales
+*.sqlite3
+
+# Archivos de registro
+*.log
+
+# Medios generados (audio, imágenes, vídeos)
+static/audios/
+static/imagenes/
+static/videos/
+
+# Activos compilados (si llegas a usar SASS, Webpack, etc.)
+static/css/
+static/js/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# IDEs / editore
+.vscode/
+.idea/
+*.sublime-*
+
+# Coverage / testing
+htmlcov/
+.coverage

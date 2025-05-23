@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+
+{% block title %}Dashboard — LearningGO{% endblock %}
+
+{% block content %}
+  <!-- ENCABEZADO + RESUMEN -->
+  <header class="bg-light p-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="mb-0">¡Bienvenida, {{ usuario }}!</h2>
+      <small class="text-secondary">{{ today.strftime('%d/%m/%Y') }}</small>
+    </div>
+    {% if primera_vez %}
+  <div class="alert alert-info alert-dismissible fade show mt-3" role="alert">
+    <strong>¡Bienvenida por primera vez a LearningGO!</strong><br>
+    Pulsa <span class="badge bg-primary">⚡ Generar Curso Rápido</span> para crear tu primer curso personalizado automáticamente.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+  </div>
+{% endif %}
+
+  </header>
+  <div class="p-4">
+    <div class="row g-3 mb-4">
+      <div class="col">
+        <div class="alert alert-info mb-0">
+          <strong>Cursos en Progreso:</strong>
+          {% set en_prog = mis_cursos|selectattr('completed','equalto',False)|list %}
+          {% if en_prog %}
+            Tienes {{ en_prog|length }} curso(s) en progreso
+          {% else %}
+            No tienes cursos en progreso
+          {% endif %}
+        </div>
+      </div>
+      <div class="col">
+        <div class="alert alert-success mb-0">
+          <strong>Cursos Completados:</strong>
+          {% set comp = mis_cursos|selectattr('completed','equalto',True)|list %}
+          {% if comp %}
+            Has completado {{ comp|length }} curso(s)
+          {% else %}
+            No tienes cursos completados
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- MIS CURSOS (toggle) -->
+    <div id="mis-cursos">
+      <!-- PROGRESO -->
+      <section class="mb-5">
+        <h4 class="h5 text-primary mb-3">Cursos en Progreso</h4>
+        {% if en_prog %}
+          {% for curso in en_prog %}
+            <div class="card mb-3">
+              <div class="card-body">
+                <h5 class="card-title">{{ curso.tema }}</h5>
+                <p class="card-text mb-1">
+                  Nivel: {{ curso.experiencia }} · Objetivos: {{ curso.objetivos }}
+                </p>
+                <small class="text-muted">Creado: {{ curso.created_at.strftime('%d/%m/%Y') }}</small>
+                <div class="mt-3">
+                  <button class="btn btn-outline-primary btn-sm"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#det-{{ curso._id }}">
+                    Ver {{ curso.lecciones_detalle|length }} lecciones
+                  </button>
+                  <form action="{{ url_for('complete_curso', curso_id=curso._id) }}"
+                        method="post" class="d-inline ms-2">
+                    <button class="btn btn-success btn-sm">Marcar completado</button>
+                  </form>
+                  <a href="{{ url_for('quiz_global', curso_id=curso._id) }}"
+                     class="btn btn-outline-info btn-sm ms-2"> Quiz Global</a>
+                </div>
+
+                <div class="collapse mt-3" id="det-{{ curso._id }}">
+                  {% for lec in curso.lecciones_detalle %}
+                    <div class="mb-4">
+                      <strong>Parte {{ loop.index }}:</strong> {{ lec.titulo }}
+                      <div class="mt-2">
+                        <video controls class="w-100 rounded" style="max-height:200px;">
+                          <source src="{{ url_for('static', filename='videos/' ~ lec.video_path) }}"
+                                  type="video/mp4">
+                        </video>
+                      </div>
+                      <div class="mt-3">
+                        <h6>Guion completo</h6>
+                        <pre class="bg-light p-2">{{ lec.script }}</pre>
+                      </div>
+                      <button class="btn btn-secondary btn-sm"
+                              onclick="toggleFuentes('{{ curso._id }}_{{ loop.index0 }}')">
+                        🔍 Ver Fuentes RAG
+                      </button>
+                      <div id="fuentes-{{ curso._id }}_{{ loop.index0 }}"
+                           class="mt-2 p-2 border"
+                           style="display:none;">
+                        <h6>Fuentes usadas:</h6>
+                        <ul>
+                          {% for f in lec.fuentes %}
+                            <li>
+                              <strong>{{ f.title }}</strong>: {{ f.snippet }}
+                              (<a href="{{ f.link }}" target="_blank">ver</a>)
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="alert alert-warning">No tienes cursos en progreso.</div>
+        {% endif %}
+      </section>
+
+      <!-- COMPLETADOS -->
+      <section class="mb-5">
+        <h4 class="h5 text-success mb-3">Cursos Completados</h4>
+        {% if comp %}
+          {% for curso in comp %}
+            <div class="card mb-3 border-success">
+              <div class="card-body">
+                <h5 class="card-title">{{ curso.tema }} ✓</h5>
+                <small class="text-muted">
+                  Completado: {{ curso.completed_at.strftime('%d/%m/%Y') }}
+                </small>
+                <div class="mt-3">
+                  <button class="btn btn-outline-secondary btn-sm"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#detc-{{ curso._id }}">
+                    Ver contenido
+                  </button>
+                  <a href="{{ url_for('quiz_global', curso_id=curso._id) }}"
+                     class="btn btn-outline-info btn-sm ms-2"> Quiz Global</a>
+                </div>
+                <div class="collapse mt-3" id="detc-{{ curso._id }}">
+                  {% for lec in curso.lecciones_detalle %}
+                    <div class="mb-4">
+                      <strong>Parte {{ loop.index }}:</strong> {{ lec.titulo }}
+                      <div class="mt-2">
+                        <video controls class="w-100 rounded" style="max-height:200px;">
+                          <source src="{{ url_for('static', filename='videos/' ~ lec.video_path) }}"
+                                  type="video/mp4">
+                        </video>
+                      </div>
+                      <div class="mt-3">
+                        <h6>Guion completo</h6>
+                        <pre class="bg-light p-2">{{ lec.script }}</pre>
+                      </div>
+                      <button class="btn btn-secondary btn-sm"
+                              onclick="toggleFuentes('c-{{ curso._id }}_{{ loop.index0 }}')">
+                        🔍 Ver Fuentes RAG
+                      </button>
+                      <div id="fuentes-c-{{ curso._id }}_{{ loop.index0 }}"
+                           class="mt-2 p-2 border"
+                           style="display:none;">
+                        <h6>Fuentes usadas:</h6>
+                        <ul>
+                          {% for f in lec.fuentes %}
+                            <li>
+                              <strong>{{ f.title }}</strong>: {{ f.snippet }}
+                              (<a href="{{ f.link }}" target="_blank">ver</a>)
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="alert alert-info">No tienes cursos completados.</div>
+        {% endif %}
+      </section>
+    </div>
+
+    <!-- SOLICITAR NUEVO CURSO -->
+    <section id="nuevos" class="mb-5">
+      <h4 class="h5 text-warning mb-3">Solicitar Nuevo Curso</h4>
+      <div class="card p-4">
+        <form action="{{ url_for('generar_curso_personalizado') }}" method="post">
+          <div class="mb-3">
+            <label class="form-label">Tema del curso</label>
+            <input name="tema" class="form-control" placeholder="Ej. Python Avanzado" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Objetivos</label>
+            <textarea name="objetivos" class="form-control" rows="2"
+                      placeholder="¿Qué quieres aprender?" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nivel de experiencia</label>
+            <select name="experiencia" class="form-select" required>
+              <option value="">Selecciona nivel…</option>
+              <option>Básico</option>
+              <option>Intermedio</option>
+              <option>Avanzado</option>
+            </select>
+          </div>
+    
+          <button class="btn btn-generar-curso w-100">Generar Curso</button>
+        </form>
+      </div>
+    </section>
+    
+
+    <!-- CALENDARIO -->
+    <section id="calendario" class="mb-5">
+      <h4 class="h5 text-info mb-3">Calendario</h4>
+      <div id="calendar" style="min-height:300px;"></div>
+    </section>
+
+    <!-- CHATBOT -->
+    <section id="chat" class="mb-5">
+      <h4 class="h5 text-secondary mb-3">Chatbot de Ayuda</h4>
+      <div class="card p-3">
+        <div id="chatbot-container"
+             style="height:200px; overflow:auto; background:#f8f9ff; padding:10px;">
+        </div>
+        <div class="input-group mt-2">
+          <input id="chat-input" class="form-control" placeholder="Escribe tu mensaje…">
+          <button id="send-chat" class="btn btn-primary">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block scripts_extra %}
+  {{ super() }}
+
+  <!-- Toggle Mis Cursos -->
+  <script>
+    document.getElementById('toggle-cursos')
+            .addEventListener('click', e => {
+      e.preventDefault();
+      document.getElementById('mis-cursos')
+              .classList.toggle('d-none');
+    });
+  </script>
+
+  <!-- FullCalendar -->
+
+<!-- Cargar FullCalendar desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const el = document.getElementById('calendar');
+    if (!el) return;
+
+    const calendar = new FullCalendar.Calendar(el, {
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      selectable: true,
+      select: function (info) {
+        const titulo = prompt("¿Título del evento?");
+        if (titulo) {
+          fetch('/insert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              title: titulo,
+              start: info.startStr,
+              end: info.endStr
+            })
+          }).then(() => calendar.refetchEvents());
+        }
+      },
+      eventClick: function(info) {
+        if (confirm("¿Eliminar este evento?")) {
+          fetch('/ajax_delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ id: info.event.id })
+          }).then(() => calendar.refetchEvents());
+        }
+      },
+      events: '/eventos'
+    });
+
+    calendar.render();
+  });
+</script>
+
+  <!-- Toggle fuentes RAG -->
+  <script>
+    function toggleFuentes(id) {
+      var el = document.getElementById('fuentes-' + id);
+      el.style.display = (el.style.display === 'none' ? 'block' : 'none');
+    }
+  </script>
+
+  <!-- Chatbot AJAX -->
+  <script>
+    document.getElementById('send-chat')
+            .addEventListener('click', function() {
+      var inp = document.getElementById('chat-input'),
+          log = document.getElementById('chatbot-container'),
+          msg = inp.value.trim();
+      if (!msg) return;
+      log.innerHTML += '<div><strong>Tú:</strong> '+msg+'</div>';
+      log.scrollTop = log.scrollHeight;
+      inp.value = '';
+      fetch('/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({msg})
+      })
+      .then(r=>r.json())
+      .then(d=>{
+        log.innerHTML += '<div><strong>AI:</strong> '+d.respuesta+'</div>';
+        log.scrollTop = log.scrollHeight;
+      });
+    });
+  </script>
+{% endblock %}

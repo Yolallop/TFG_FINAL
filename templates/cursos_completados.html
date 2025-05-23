@@ -1,0 +1,14 @@
+<section id="cursos-realizados">
+    <h4 class="section-header mt-5">Cursos Realizados</h4>
+    {% set completados = mis_cursos|selectattr('completed','equalto',True)|list %}
+    {% if completados %}
+      <div class="row g-4 mb-5">
+        {% for curso in completados %}
+          <!-- tu tarjeta de curso completado aquí -->
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">No tienes cursos realizados aún.</div>
+    {% endif %}
+  </section>
+  

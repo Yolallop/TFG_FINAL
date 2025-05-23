@@ -1,0 +1,14 @@
+<section id="cursos">
+    <h4 class="section-header">Cursos en Progreso</h4>
+    {% set en_progreso = mis_cursos|selectattr('completed','equalto',False)|list %}
+    {% if en_progreso %}
+      <div class="row g-4 mb-5">
+        {% for curso in en_progreso %}
+          <!-- tu tarjeta de curso en progreso aquí -->
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">No tienes cursos en progreso.</div>
+    {% endif %}
+  </section>
+  
