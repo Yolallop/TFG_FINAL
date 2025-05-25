@@ -177,17 +177,18 @@ body {
 }
 
 .btn-generar-curso {
-    background-color: #00bfa6;
+    background-color: #19685e;
     color: white;
     font-weight: bold;
     padding: 12px 20px;
     border: none;
     border-radius: 8px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    transition: background-
+    color 0.3s ease, transform 0.2s ease;
   }
   
   .btn-generar-curso:hover {
-    background-color: #009e8d;
+    background-color: #2d6f68;
     transform: scale(1.03);
     box-shadow: 0 4px 12px rgba(0, 191, 166, 0.25);
   }

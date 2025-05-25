@@ -215,20 +215,25 @@
     </section>
 
     <!-- CHATBOT -->
-    <section id="chat" class="mb-5">
-      <h4 class="h5 text-secondary mb-3">Chatbot de Ayuda</h4>
-      <div class="card p-3">
-        <div id="chatbot-container"
-             style="height:200px; overflow:auto; background:#f8f9ff; padding:10px;">
-        </div>
-        <div class="input-group mt-2">
-          <input id="chat-input" class="form-control" placeholder="Escribe tu mensaje…">
-          <button id="send-chat" class="btn btn-primary">
-            <i class="bi bi-send-fill"></i>
-          </button>
-        </div>
+  
+<section id="chat" class="mb-5">
+  <h4 class="h5 text-secondary mb-3">Chatbot de Ayuda</h4>
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <strong> Chatbot</strong>
+    </div>
+    <div class="card-body p-0 d-flex flex-column" style="background-color: #f0f2f5; height: 300px;">
+      <div id="chatbot-container" class="flex-grow-1 p-3" style="overflow-y: auto;"></div>
+      <div class="d-flex border-top p-3 bg-white">
+        <input type="text" id="chat-input" class="form-control me-2 rounded-pill px-3" placeholder="Escribe tu mensaje…" required>
+        <button class="btn btn-primary rounded-pill px-4" type="button" id="send-chat">
+          <i class="bi bi-send-fill"></i> Enviar
+        </button>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
+
   </div>
 {% endblock %}
 

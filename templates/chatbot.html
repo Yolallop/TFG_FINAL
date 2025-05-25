@@ -2,42 +2,74 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Bienvenido, {{ user_profile['name'] }} 👋</h2>
+  <h2>Bienvenido, {{ user_profile['name'] }} 👋</h2>
 
-    <div class="card p-4 mb-5 bg-light">
-        <h4>🎥 ¿Listo para aprender?</h4>
-        <p>Pulsa el botón para generar tu curso personalizado en video.</p>
-        <form action="{{ url_for('generar_curso') }}" method="POST">
-            <button type="submit" class="btn btn-success">🚀 Generar Curso Inteligente</button>
-        </form>
+  <div class="card p-4 mb-5 bg-light shadow">
+    <h4>🎥 ¿Listo para aprender?</h4>
+    <p>Pulsa el botón para generar tu curso personalizado en video.</p>
+    <form action="{{ url_for('generar_curso') }}" method="POST">
+      <button type="submit" class="btn btn-success btn-lg">🚀 Generar Curso Inteligente</button>
+    </form>
+  </div>
+
+  <!-- Chatbot -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-gradient bg-primary text-white">
+      <h5 class="mb-0">🤖 Chatbot de Ayuda</h5>
     </div>
 
-    <!-- Chatbot -->
-    <div class="card mt-5">
-        <div class="card-header">
-            <h4>Chatbot de Ayuda</h4>
-        </div>
-        <div class="card-body">
-            <div id="chatbot-container" style="max-height: 400px; overflow-y: scroll; margin-bottom: 10px;">
-                <!-- Aquí se mostrarán los mensajes -->
-                {% if bot_response %}
-                <div class="d-flex justify-content-start mb-4">
-                    <div class="img_cont_msg">
-                        <img src="../static/images/logoUniConnect.png" class="rounded-circle user_img_msg">
-                    </div>
-                    <div class="msg_cotainer">
-                        {{ bot_response }}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            <div class="input-group">
-                <form method="POST" action="/chatbot">
-                    <input type="text" name="msg" id="chat-input" class="form-control" placeholder="Escribe tu mensaje..." required />
-                    <button class="btn btn-primary" type="submit" id="send-chat">Enviar</button>
-                </form>
-            </div>
-        </div>
+    <div class="card-body d-flex flex-column p-0" style="background-color: #f9fafb; height: 450px;">
+      <div id="chatbot-container" class="p-3 flex-grow-1 overflow-auto">
+        <!-- Aquí se insertan los mensajes -->
+      </div>
+      <div class="border-top d-flex align-items-center p-3 bg-white">
+        <input id="chat-input" type="text" class="form-control rounded-pill me-2 px-3"
+               placeholder="Escribe tu mensaje..." autocomplete="off">
+        <button id="send-chat" class="btn btn-primary rounded-pill px-4">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
     </div>
+  </div>
 </div>
-{% endblock %}
+
+<!-- Estilos adicionales -->
+<style>
+  #chatbot-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #chatbot-container::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 10px;
+  }
+
+  .chat-bubble {
+    padding: 10px 15px;
+    border-radius: 18px;
+    max-width: 75%;
+    font-size: 14px;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .msg-user {
+    text-align: right;
+  }
+
+  .msg-user .chat-bubble {
+    background-color: #d1e7dd;
+    color: #1b1e21;
+    margin-left: auto;
+  }
+
+  .msg-bot {
+    text-align: left;
+  }
+
+  .msg-bot .chat-bubble {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+  }
+</style>

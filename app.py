@@ -78,7 +78,8 @@ logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 openai.api_key = OPENAI_API_KEY
 
 # MongoDB
-db = MongoClient(os.getenv('MONGODB_URI', 'mongodb://localhost:27017/tfg_db')).tfg_db
+from config import MONGODB_URI
+db = MongoClient(MONGODB_URI).tfg_db
 users, prefs, vids = db.usuarios, db.respuestas, db.videos
 
 # Asegurar carpetas
@@ -588,7 +589,7 @@ def logout():
             }
         )
     session.clear()
-    flash('Sesión cerrada','info')
+
     return redirect(url_for('home'))
 @app.route('/generar_curso', methods=['POST'])
 def generar_curso():
@@ -1029,20 +1030,18 @@ def insert_evento():
 @app.route('/eventos')
 def obtener_eventos():
     try:
-        # ✅ Recoge fechas del query string y conviértelas
+     
         start_str = request.args.get('start')
         end_str = request.args.get('end')
 
         start = parse_date(start_str)
         end = parse_date(end_str)
 
-        # ✅ Consulta MongoDB (ajústalo a tus datos si es necesario)
         eventos = list(eventos_col.find({
             "start": {"$gte": start.isoformat()},
             "end": {"$lte": end.isoformat()}
         }))
 
-        # ✅ Devuelve eventos en formato JSON
         eventos_json = [
             {
                 "id": str(ev["_id"]),
@@ -1068,5 +1067,6 @@ def eliminar_evento():
         print("❌ Error eliminando evento:", e)
         return 'Error al eliminar evento', 500
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
