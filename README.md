@@ -1,10 +1,1 @@
-import replicate
-
-client = replicate.Client(api_token="AQUÍ_TU_TOKEN_REAL")
-
-result = client.run(
-    "stability-ai/stable-diffusion",
-    input={"prompt": "A fantasy castle at sunset"}
-)
-
-print(result)
+https://github.com/CEU-EPS-SW2/sw2_2025_repo/commits/main/
