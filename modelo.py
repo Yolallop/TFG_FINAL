@@ -1,9 +1,9 @@
 from pymongo import MongoClient
 from bson import ObjectId
 from datetime import datetime
-from config import MONGO_URI
+from config import MONGODB_URI
 
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGODB_URI)
 db = client.tfg_db
 
 # Colecciones

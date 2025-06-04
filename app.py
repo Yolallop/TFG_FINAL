@@ -614,7 +614,7 @@ def generar_curso():
 
     # 3) Si no hay secciones, abortar
     if not partes:
-        flash("⚠️ No se detectaron secciones válidas. Prueba con otros objetivos.", "danger")
+        flash(" No se detectaron secciones válidas. Prueba con otros objetivos.", "danger")
         return redirect(url_for('dashboard'))
 
     # 4) Crear curso **después** de comprobar que sí hay vídeos
@@ -1068,5 +1068,5 @@ def eliminar_evento():
         return 'Error al eliminar evento', 500
 
 if __name__ == "__main__":
+    print("⚠️ Usa Gunicorn para ejecutar esta app.")
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-

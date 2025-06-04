@@ -70,7 +70,7 @@
       <a href="#chat" class="nav-link">Chatbot</a>
     </nav>
   
-    <!-- ✅ Este es el que puede haberse borrado -->
+
     <form action="{{ url_for('generar_curso_inicial') }}" method="post" class="mt-4">
       <button class="btn btn-generar w-100">⚡ Generar Curso Rápido</button>
     </form>
@@ -124,7 +124,7 @@
           calendar.unselect();
         },
 
-        events: '/eventos' // ← se carga desde Flask
+        events: '/eventos' 
       });
 
       calendar.render();
