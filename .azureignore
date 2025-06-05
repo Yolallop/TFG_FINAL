@@ -1,0 +1,5 @@
+echo __pycache__/ >> .azureignore
+echo *.pyc >> .azureignore
+echo static/videos/ >> .azureignore
+echo static/audios/ >> .azureignore
+echo static/imagenes_generadas/ >> .azureignore
