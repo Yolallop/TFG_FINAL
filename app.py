@@ -117,7 +117,7 @@ def google_search(query: str, num_results: int = 3) -> list:
     """
     query = (query or "").strip()
     if not query:
-        logging.warning("⚠️ google_search: Query vacía, devuelvo []")
+        logging.warning(" google_search: Query vacía, devuelvo []")
         return []
 
     logging.debug(f"🔍 google_search: q={query!r}, num={num_results}")
@@ -129,11 +129,11 @@ def google_search(query: str, num_results: int = 3) -> list:
                  .list(q=query, cx=GOOGLE_SEARCH_CSE_ID, num=num_results, hl='es')
                  .execute())
         items = res.get('items', [])
-        logging.debug(f"✅ google_search: {len(items)} resultados")
+        logging.debug(f" google_search: {len(items)} resultados")
         return items
     except HttpError as e:
         # Si falla (404, 403, 400, etc.), lo anotamos y devolvemos vacío
-        logging.error(f"❌ google_search HttpError: {e}")
+        logging.error(f" google_search HttpError: {e}")
         return []
 def rag_generate_script(topic: str, nivel: str, objetivo: str) -> tuple[str, list]:
     # 1) Montar y ejecutar búsqueda RAG
@@ -325,7 +325,7 @@ def split_por_secciones(guion: str) -> list[tuple[str,str]]:
 
 
 def generar_prompt_imagen(texto: str) -> str:
-    resumen = f"Resumen del contenido: {texto[:500]}"  # Hasta 500 caracteres para mejor contexto
+    resumen = f"Resumen del contenido: {texto[:500]}"  
     prompt_mejorado = f"Genera un prompt visual de 10-15 palabras que represente este contenido de programación:\n{resumen}"
     
     for intento in range(3):
@@ -441,7 +441,7 @@ def generar_videos_por_seccion(guion: str, max_slides: int = 6) -> list[tuple[st
                 tmp_clip
             ]
 
-            # ✅ AÑADE ESTO AQUÍ:
+          
             print("\n🛠️ Ejecutando FFmpeg con:")
             print(" - Imagen:", img_path)
             print(" - Audio :", audio_path)
@@ -484,7 +484,7 @@ def generar_videos_por_seccion(guion: str, max_slides: int = 6) -> list[tuple[st
     return resultados
 
 def enviar_email_verificacion(email, token):
-    enlace = url_for('confirmar_email', token=token, _external=True)  # 🟢 AQUÍ ESTÁ
+    enlace = url_for('confirmar_email', token=token, _external=True)  
 
     asunto = "Confirma tu cuenta en LearninGO"
     cuerpo = f"""
@@ -545,7 +545,7 @@ def register():
                 'fecha_registro': datetime.utcnow()
             }
             users.insert_one(usuario)
-            session['user_id_temporal'] = str(usuario['_id'])  # guardar temporalmente para preguntas
+            session['user_id_temporal'] = str(usuario['_id'])  
         except DuplicateKeyError:
             flash("Correo ya registrado.", "warning")
             return redirect(url_for('register'))
@@ -561,14 +561,12 @@ def confirmar_email(token):
     try:
         email = s.loads(token, salt='verificacion-email', max_age=3600)
     except Exception:
-        flash("❌ El enlace ha expirado o no es válido.", "danger")
-        return redirect(url_for('login'))  # ✅ Redirige en caso de error
-
+        flash(" El enlace ha expirado o no es válido.", "danger")
+        return redirect(url_for('login'))  
     users.update_one({'email': email}, {'$set': {'verificado': True}})
 
     flash("✅ Correo verificado correctamente. Ya puedes iniciar sesión.", "success")
-    return redirect(url_for('login'))  # ✅ Redirige tras verificar
-
+    return redirect(url_for('login'))  
 @app.route('/logout')
 def logout():
     # Antes de borrar la sesión, marcamos como completados
@@ -598,7 +596,7 @@ def generar_curso():
 
     # 0) No permitir otro mientras haya uno en progreso
     if user_has_open_course(session['user_id']):
-        flash("🥱 Tienes un curso en progreso. Completa o márcalo terminado antes de generar otro.", "warning")
+        flash("Tienes un curso en progreso. Completa o márcalo terminado antes de generar otro.", "warning")
         return redirect(url_for('dashboard'))
 
     # 1) Recuperar inputs
@@ -644,7 +642,7 @@ def generar_curso():
         lesson_ids.append(vid_id)
 
     add_lessons_to_course(curso_id, lesson_ids)
-    flash(f"✅ {len(partes)} mini-lecciones generadas exitosamente.", "success")
+    flash(f" {len(partes)} mini-lecciones generadas exitosamente.", "success")
     return redirect(url_for('dashboard'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -702,7 +700,7 @@ def preguntas():
             flash("Error enviando correo de verificación. Contacta soporte.", "danger")
             return redirect(url_for('login'))
 
-        session.pop('user_id_temporal', None)  # limpieza de sesión temporal
+        session.pop('user_id_temporal', None)  
         flash("Preguntas guardadas. Revisa tu correo para verificar tu cuenta.", "success")
         return redirect(url_for('login'))
 
@@ -830,7 +828,7 @@ def dashboard():
         mis_cursos  = cursos,
         today       = datetime.utcnow(),
         primera_vez = primera_vez
-        # Ya NO se pasa 'calendar' porque ahora los eventos vienen por AJAX desde /eventos
+       
     )
 
 
@@ -855,7 +853,7 @@ def solicitar_curso():
         guion   = limpiar_guion(raw)
         partes  = generar_videos_por_seccion(guion)
         if not partes:
-            flash("⚠️ No se detectaron secciones para ese tema. Inténtalo con otros parámetros.", "danger")
+            flash("No se detectaron secciones para ese tema. Inténtalo con otros parámetros.", "danger")
             return redirect(url_for('solicitar_curso'))
 
         # 3) Crear curso y guardar lecciones
@@ -924,7 +922,7 @@ def generar_curso_inicial():
     partes = generar_videos_por_seccion(guion)
 
     if not partes:
-        flash("⚠️ No se detectaron secciones. Contacta al soporte.", "danger")
+        flash("No se detectaron secciones. Contacta al soporte.", "danger")
         return redirect(url_for('dashboard'))
 
     curso_id = create_course(
@@ -932,7 +930,7 @@ def generar_curso_inicial():
         tema=tema,
         objetivos=objetivos,
         experiencia=experiencia,
-        origin='initial'  # Indicamos claramente que es curso inicial
+        origin='initial'  
     )
 
     lesson_ids = []
@@ -980,7 +978,7 @@ def generar_curso_personalizado():
 
     # Si no hay secciones, abortar
     if not partes:
-        flash("⚠️ No se detectaron secciones válidas para ese tema. Prueba con otros parámetros.", "danger")
+        flash(" No se detectaron secciones válidas para ese tema. Prueba con otros parámetros.", "danger")
         return redirect(url_for('dashboard', _anchor='nuevos'))
 
     # Crear el curso en la base de datos
@@ -1054,19 +1052,19 @@ def obtener_eventos():
         return jsonify(eventos_json)
 
     except Exception as e:
-        print("❌ ERROR /eventos:", e)
+        print(" ERROR /eventos:", e)
         return "Error interno", 500
 @app.route('/ajax_delete', methods=['POST'])
 def eliminar_evento():
     try:
-        from bson import ObjectId  # asegúrate de tenerlo
+        from bson import ObjectId 
         id = request.form['id']
         eventos_col.delete_one({"_id": ObjectId(id)})
         return '', 204
     except Exception as e:
-        print("❌ Error eliminando evento:", e)
+        print(" Error eliminando evento:", e)
         return 'Error al eliminar evento', 500
 
 if __name__ == "__main__":
-    print("⚠️ Usa Gunicorn para ejecutar esta app.")
+    print(" Usa Gunicorn para ejecutar esta app.")
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

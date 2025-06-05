@@ -45,7 +45,7 @@ Este proyecto está orientado a **facilitar el aprendizaje personalizado** y apo
 - **Backend:** Flask, Python 3.10
 - **Base de datos:** MongoDB Atlas
 - **Frontend:** Bootstrap
-- **Servicios IA:** OpenAI, DALL·E, gTTS, Coqui, FFmpeg
+- **Servicios IA:** OpenAI, DALL·E, gTTS,FFmpeg
 - **Contenedores:** Docker
 - **Despliegue:** Azure App Service + Azure Container Registry
 
@@ -53,7 +53,7 @@ Este proyecto está orientado a **facilitar el aprendizaje personalizado** y apo
 
 Antes de empezar, asegúrate de tener instalados los siguientes programas en tu máquina:
 
-###  1. Python 3.10 o superior
+### Instalacion Python 3.10 o superior
 
 #### ▸ Windows:
 - Descarga Python desde [https://www.python.org/downloads/windows](https://www.python.org/downloads/windows)
@@ -64,7 +64,7 @@ Antes de empezar, asegúrate de tener instalados los siguientes programas en tu 
 ```bash
 brew install python@3.10
 ```
-### ▸ Linux 
+### ▸ Linux
 ```bash
 sudo apt update
 sudo apt install python3.10 python3.10-venv python3-pip
